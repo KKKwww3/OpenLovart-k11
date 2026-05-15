@@ -13,7 +13,6 @@ OpenLovart 是一个基于 AI 的设计平台，让创意设计变得简单而�
 - 🎨 **智能画布** - 可视化编辑器，支持拖拽、缩放、旋转等操作
 - 🖼️ **AI 图像生成** - 集成 Google Gemini 和 X.AI Grok，生成高质量图像
 - 💾 **项目管理** - 保存和管理你的设计项目
-- 👤 **用户系统** - 基于 Clerk 的安全认证和积分系统
 - ☁️ **云端存储** - 使用 Supabase 实现数据持久化
 
 ## 🚀 技术栈
@@ -21,7 +20,6 @@ OpenLovart 是一个基于 AI 的设计平台，让创意设计变得简单而�
 - **框架**: Next.js 16 (App Router)
 - **语言**: TypeScript
 - **样式**: Tailwind CSS 4
-- **认证**: Clerk
 - **数据库**: Supabase (PostgreSQL)
 - **AI 服务**: 
   - Google Gemini (图像生成)
@@ -54,10 +52,6 @@ cp .env.example .env.local
 编辑 `.env.local` 文件：
 
 ```env
-# Clerk Authentication
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-CLERK_SECRET_KEY=your_clerk_secret_key
-
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
@@ -78,11 +72,7 @@ XAI_API_KEY=your_xai_api_key
 -- 文件位置: ./supabase-schema.sql
 ```
 
-### 5. 配置 Clerk JWT 模板
-
-参考 `CLERK_JWT_SETUP.md` 文档配置 Clerk 的 Supabase JWT 模板。
-
-### 6. 运行开发服务器
+### 4. 运行开发服务器
 
 ```bash
 npm run dev
@@ -91,11 +81,6 @@ npm run dev
 打开 [http://localhost:3000](http://localhost:3000) 查看应用。
 
 ## 🔑 获取 API 密钥
-
-### Clerk (认证服务)
-1. 访问 [Clerk Dashboard](https://dashboard.clerk.com/)
-2. 创建新应用
-3. 复制 Publishable Key 和 Secret Key
 
 ### Supabase (数据库)
 1. 访问 [Supabase Dashboard](https://supabase.com/dashboard)
@@ -147,8 +132,6 @@ npm run lint
 
 ## 📚 文档
 
-- [Clerk JWT 设置](./CLERK_JWT_SETUP.md)
-- [Grok 集成指南](./GROK_INTEGRATION.md)
 - [用户积分功能](./USER_CREDITS_FEATURE.md)
 - [故障排除](./TROUBLESHOOTING.md)
 
@@ -172,7 +155,6 @@ MIT License
 ## 🙏 致谢
 
 - [Next.js](https://nextjs.org/)
-- [Clerk](https://clerk.com/)
 - [Supabase](https://supabase.com/)
 - [Google Gemini](https://ai.google.dev/)
 - [X.AI](https://x.ai/)

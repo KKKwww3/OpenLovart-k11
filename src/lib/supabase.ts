@@ -76,26 +76,6 @@ export interface Database {
   };
 }
 
-/**
- * Create a Supabase client with Clerk session token
- * This function is used on the client side
- * @param token - The JWT token from Clerk session
- */
-export function createClerkSupabaseClient(token: string | null) {
-  return createClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      global: {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      },
-    }
-  );
-}
-
-/**
- * Create a Supabase client for server-side operations
- */
 export function createServerSupabaseClient() {
   return createClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

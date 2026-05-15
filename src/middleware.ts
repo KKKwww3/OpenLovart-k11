@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// 简单的 middleware - Clerk 认证通过 ClerkProvider 在客户端处理
 export function middleware(request: NextRequest) {
   return NextResponse.next();
 }

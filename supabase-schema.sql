@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS user_credits (
 -- Create projects table
 CREATE TABLE IF NOT EXISTS projects (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id TEXT NOT NULL DEFAULT auth.jwt()->>'sub',
+  user_id TEXT NOT NULL DEFAULT 'internal_user_001',
   title TEXT NOT NULL,
   thumbnail TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -34,88 +34,22 @@ CREATE TABLE IF NOT EXISTS canvas_elements (
 -- Enable Row Level Security (RLS) on projects table
 ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
 
--- Create RLS policy for projects - users can only see their own projects
-CREATE POLICY "Users can view their own projects"
+-- Internal use: allow all access
+CREATE POLICY "internal_all_access_projects"
   ON projects
-  FOR SELECT
-  USING (auth.jwt()->>'sub' = user_id);
-
--- Create RLS policy for projects - users can insert their own projects
-CREATE POLICY "Users can insert their own projects"
-  ON projects
-  FOR INSERT
-  WITH CHECK (auth.jwt()->>'sub' = user_id);
-
--- Create RLS policy for projects - users can update their own projects
-CREATE POLICY "Users can update their own projects"
-  ON projects
-  FOR UPDATE
-  USING (auth.jwt()->>'sub' = user_id)
-  WITH CHECK (auth.jwt()->>'sub' = user_id);
-
--- Create RLS policy for projects - users can delete their own projects
-CREATE POLICY "Users can delete their own projects"
-  ON projects
-  FOR DELETE
-  USING (auth.jwt()->>'sub' = user_id);
+  FOR ALL
+  USING (true)
+  WITH CHECK (true);
 
 -- Enable Row Level Security (RLS) on canvas_elements table
 ALTER TABLE canvas_elements ENABLE ROW LEVEL SECURITY;
 
--- Create RLS policy for canvas_elements - users can only see elements from their projects
-CREATE POLICY "Users can view their own canvas elements"
+-- Internal use: allow all access
+CREATE POLICY "internal_all_access_canvas"
   ON canvas_elements
-  FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM projects
-      WHERE projects.id = canvas_elements.project_id
-      AND projects.user_id = auth.jwt()->>'sub'
-    )
-  );
-
--- Create RLS policy for canvas_elements - users can insert elements to their projects
-CREATE POLICY "Users can insert canvas elements to their projects"
-  ON canvas_elements
-  FOR INSERT
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM projects
-      WHERE projects.id = canvas_elements.project_id
-      AND projects.user_id = auth.jwt()->>'sub'
-    )
-  );
-
--- Create RLS policy for canvas_elements - users can update their canvas elements
-CREATE POLICY "Users can update their own canvas elements"
-  ON canvas_elements
-  FOR UPDATE
-  USING (
-    EXISTS (
-      SELECT 1 FROM projects
-      WHERE projects.id = canvas_elements.project_id
-      AND projects.user_id = auth.jwt()->>'sub'
-    )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM projects
-      WHERE projects.id = canvas_elements.project_id
-      AND projects.user_id = auth.jwt()->>'sub'
-    )
-  );
-
--- Create RLS policy for canvas_elements - users can delete their canvas elements
-CREATE POLICY "Users can delete their own canvas elements"
-  ON canvas_elements
-  FOR DELETE
-  USING (
-    EXISTS (
-      SELECT 1 FROM projects
-      WHERE projects.id = canvas_elements.project_id
-      AND projects.user_id = auth.jwt()->>'sub'
-    )
-  );
+  FOR ALL
+  USING (true)
+  WITH CHECK (true);
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_projects_user_id ON projects(user_id);
@@ -150,21 +84,9 @@ CREATE TRIGGER update_user_credits_updated_at
 -- Enable Row Level Security (RLS) on user_credits table
 ALTER TABLE user_credits ENABLE ROW LEVEL SECURITY;
 
--- Create RLS policy for user_credits - users can view their own credits
-CREATE POLICY "Users can view their own credits"
+-- Internal use: allow all access
+CREATE POLICY "internal_all_access_credits"
   ON user_credits
-  FOR SELECT
-  USING (auth.jwt()->>'sub' = user_id);
-
--- Create RLS policy for user_credits - users can insert their own credits
-CREATE POLICY "Users can insert their own credits"
-  ON user_credits
-  FOR INSERT
-  WITH CHECK (auth.jwt()->>'sub' = user_id);
-
--- Create RLS policy for user_credits - users can update their own credits
-CREATE POLICY "Users can update their own credits"
-  ON user_credits
-  FOR UPDATE
-  USING (auth.jwt()->>'sub' = user_id)
-  WITH CHECK (auth.jwt()->>'sub' = user_id);
+  FOR ALL
+  USING (true)
+  WITH CHECK (true);

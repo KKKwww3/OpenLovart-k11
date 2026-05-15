@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { ChevronLeft, Plus, Minus, MousePointer2, ChevronDown, Sparkles, Save, Cloud, CloudOff } from 'lucide-react';
 import Link from 'next/link';
-import { useUser } from '@clerk/nextjs';
 import { useSearchParams } from 'next/navigation';
 import { FloatingToolbar } from '@/components/lovart/FloatingToolbar';
 import { CanvasArea, CanvasElement } from '@/components/lovart/CanvasArea';
@@ -14,7 +13,6 @@ import { useSupabase } from '@/hooks/useSupabase';
 import { v4 as uuidv4 } from 'uuid';
 
 function LovartCanvasContent() {
-    const { user } = useUser();
     const supabase = useSupabase();
     const searchParams = useSearchParams();
     const projectId = searchParams.get('id');
@@ -44,12 +42,6 @@ function LovartCanvasContent() {
 
     // Save project to Supabase
     const saveProject = useCallback(async () => {
-        if (!user) {
-            console.log('Save skipped: No user logged in');
-            setSaveStatus('offline');
-            return;
-        }
-
         if (!supabase) {
             console.log('Save skipped: Supabase client not initialized yet');
             return;
@@ -62,7 +54,7 @@ function LovartCanvasContent() {
         }
 
         isSavingRef.current = true;
-        console.log('Starting save...', { userId: user.id, projectId: currentProjectId, elementsCount: elements.length });
+        console.log('Starting save...', { projectId: currentProjectId, elementsCount: elements.length });
 
         try {
             setSaveStatus('saving');
@@ -155,16 +147,10 @@ function LovartCanvasContent() {
                 saveProject();
             }
         }
-    }, [user, supabase, currentProjectId, title, elements]);
+    }, [supabase, currentProjectId, title, elements]);
 
     // Load project from Supabase
     const loadProject = useCallback(async (id: string) => {
-        if (!user) {
-            console.log('Load skipped: No user logged in');
-            setIsLoading(false);
-            return;
-        }
-
         if (!supabase) {
             console.log('Load skipped: Supabase client not initialized yet');
             return;
@@ -217,12 +203,12 @@ function LovartCanvasContent() {
         } finally {
             setIsLoading(false);
         }
-    }, [user, supabase]);
+    }, [supabase]);
 
     // Load project on mount if ID is provided
     const hasLoadedRef = useRef(false);
     useEffect(() => {
-        if (projectId && user && supabase && !hasLoadedRef.current) {
+        if (projectId && supabase && !hasLoadedRef.current) {
             hasLoadedRef.current = true;
             loadProject(projectId);
         } else if (!projectId) {
@@ -237,7 +223,7 @@ function LovartCanvasContent() {
             setInitialPrompt(prompt);
             setShowChat(true);
         }
-    }, [projectId, user, supabase, loadProject, searchParams]);
+    }, [projectId, supabase, loadProject, searchParams]);
 
     // Mark as initialized after loading completes
     useEffect(() => {
@@ -251,9 +237,8 @@ function LovartCanvasContent() {
     // Auto-save with debouncing
     useEffect(() => {
         // Don't auto-save if not initialized, not logged in, or still loading
-        if (!user || isLoading || !isInitializedRef.current) {
+        if (isLoading || !isInitializedRef.current) {
             console.log('Auto-save skipped:', { 
-                hasUser: !!user, 
                 isLoading, 
                 isInitialized: isInitializedRef.current 
             });
@@ -278,7 +263,7 @@ function LovartCanvasContent() {
                 clearTimeout(saveTimeoutRef.current);
             }
         };
-    }, [elements, title, user, isLoading, saveProject]);
+    }, [elements, title, isLoading, saveProject]);
 
     // Handle Delete Key
     useEffect(() => {
@@ -637,7 +622,7 @@ function LovartCanvasContent() {
                                 <span>保存中...</span>
                             </>
                         )}
-                        {saveStatus === 'saved' && user && (
+                        {saveStatus === 'saved' && (
                             <>
                                 <Cloud size={14} className="text-green-500" />
                                 <span className="text-green-600">已保存</span>
@@ -648,9 +633,6 @@ function LovartCanvasContent() {
                                 <CloudOff size={14} className="text-red-500" />
                                 <span className="text-red-600">离线</span>
                             </>
-                        )}
-                        {!user && (
-                            <span className="text-amber-600">未登录</span>
                         )}
                     </div>
                 </div>

@@ -2,10 +2,9 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { Plus, Sparkles, Bell, X, Star } from 'lucide-react';
-import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/nextjs";
 import { DashboardSidebar } from '@/components/lovart/DashboardSidebar';
 import { ProjectCard } from '@/components/lovart/ProjectCard';
-import { useSupabase } from '@/hooks/useSupabase';
+import { useSupabase, INTERNAL_USER_ID } from '@/hooks/useSupabase';
 import Link from 'next/link';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -28,7 +27,6 @@ interface Notification {
 }
 
 export default function LovartDashboard() {
-    const { user } = useUser();
     const supabase = useSupabase();
     const [projects, setProjects] = useState<Project[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -95,13 +93,12 @@ export default function LovartDashboard() {
     // Load user's projects and credits
     useEffect(() => {
         async function loadData() {
-            if (!user || !supabase) {
+            if (!supabase) {
                 setIsLoading(false);
                 return;
             }
 
             try {
-                // 并行加载项目和积分，提升性能
                 const [projectsResult, creditsResult] = await Promise.all([
                     supabase
                         .from('projects')
@@ -110,20 +107,17 @@ export default function LovartDashboard() {
                     (supabase as any)
                         .from('user_credits')
                         .select('credits')
-                        .eq('user_id', user.id)
+                        .eq('user_id', INTERNAL_USER_ID)
                         .single()
                 ]);
 
-                // 处理项目数据
                 if (projectsResult.error) throw projectsResult.error;
                 setProjects(projectsResult.data || []);
 
-                // 处理积分数据
                 if (creditsResult.error && creditsResult.error.code === 'PGRST116') {
-                    // 用户积分记录不存在，创建新记录
                     const { data: newData } = await (supabase as any)
                         .from('user_credits')
-                        .insert({ user_id: user.id, credits: 1000 })
+                        .insert({ user_id: INTERNAL_USER_ID, credits: 1000 })
                         .select()
                         .single();
                     setCredits(newData?.credits || 1000);
@@ -138,7 +132,7 @@ export default function LovartDashboard() {
         }
 
         loadData();
-    }, [user, supabase]);
+    }, [supabase]);
 
     // Typing effect for placeholder
     useEffect(() => {
@@ -174,11 +168,6 @@ export default function LovartDashboard() {
 
     const handleGenerate = async () => {
         if (!inputValue.trim() || isGenerating) return;
-
-        if (!user) {
-            alert('请先登录');
-            return;
-        }
 
         if (!supabase) {
             alert('系统初始化中，请稍后再试');
@@ -318,26 +307,12 @@ export default function LovartDashboard() {
                             </div>
 
                             {/* Credits Display */}
-                            <SignedIn>
-                                {credits !== null && (
-                                    <div className="px-3 py-1.5 bg-black text-white rounded-full text-xs font-medium flex items-center gap-1.5">
-                                        <span className="text-sm">⚡</span>
-                                        <span>{credits.toLocaleString()}</span>
-                                    </div>
-                                )}
-                            </SignedIn>
-
-                            {/* User Button or Sign In */}
-                            <SignedOut>
-                                <SignInButton mode="modal">
-                                    <button className="px-4 py-2 bg-black text-white rounded-full text-sm font-medium hover:bg-gray-800 transition-colors">
-                                        登录
-                                    </button>
-                                </SignInButton>
-                            </SignedOut>
-                            <SignedIn>
-                                <UserButton />
-                            </SignedIn>
+                            {credits !== null && (
+                                <div className="px-3 py-1.5 bg-black text-white rounded-full text-xs font-medium flex items-center gap-1.5">
+                                    <span className="text-sm">⚡</span>
+                                    <span>{credits.toLocaleString()}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                     <div className="px-8 py-12">
@@ -414,7 +389,7 @@ export default function LovartDashboard() {
                             <div className="flex items-center justify-between mb-6">
                                 <h2 className="text-lg font-semibold text-gray-900">
                                     最近项目
-                                    {user && !isLoading && <span className="ml-2 text-sm font-normal text-gray-500">({projects.length})</span>}
+                                    {!isLoading && <span className="ml-2 text-sm font-normal text-gray-500">({projects.length})</span>}
                                 </h2>
                                 <Link href="/lovart/projects" className="text-sm text-gray-600 hover:text-gray-900">
                                     查看全部 →
@@ -435,8 +410,8 @@ export default function LovartDashboard() {
                                         <span className="font-medium text-gray-600">新建项目</span>
                                     </Link>
 
-                                    {/* User's Projects */}
-                                    {user && projects.slice(0, 3).map((project) => (
+                                    {/* Projects */}
+                                    {projects.slice(0, 3).map((project) => (
                                         <Link
                                             key={project.id}
                                             href={`/lovart/canvas?id=${project.id}`}
@@ -448,19 +423,10 @@ export default function LovartDashboard() {
                                             />
                                         </Link>
                                     ))}
-
-                                    {/* Show sample projects if not signed in */}
-                                    {!user && (
-                                        <>
-                                            <ProjectCard title="示例项目" date="2 分钟前编辑" />
-                                            <ProjectCard title="营销活动" date="1 小时前编辑" />
-                                            <ProjectCard title="社交媒体素材" date="昨天编辑" />
-                                        </>
-                                    )}
                                 </div>
                             )}
 
-                            {user && projects.length === 0 && !isLoading && (
+                            {projects.length === 0 && !isLoading && (
                                 <div className="text-center py-12 text-gray-400">
                                     <p className="mb-2">还没有项目</p>
                                     <p className="text-sm">点击 "新建项目" 开始创作！</p>
