@@ -14,6 +14,7 @@ import {
   Sparkles,
   Cloud,
   CloudOff,
+  Image as ImageIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -22,8 +23,13 @@ import { CanvasArea, CanvasElement } from "@/components/lovart/CanvasArea";
 import { ImageGeneratorPanel } from "@/components/lovart/ImageGeneratorPanel";
 import { VideoGeneratorPanel } from "@/components/lovart/VideoGeneratorPanel";
 import { AiDesignerPanel } from "@/components/lovart/AiDesignerPanel";
+import { ECommercePanel } from "@/components/ecommerce/ECommercePanel";
 import { useSupabase } from "@/hooks/useSupabase";
 import { v4 as uuidv4 } from "uuid";
+import {
+  generateDesign,
+  generateImage,
+} from "@/lib/edge-functions";
 
 function LovartCanvasContent() {
   const supabase = useSupabase();
@@ -46,6 +52,7 @@ function LovartCanvasContent() {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [showChat, setShowChat] = useState(false);
+  const [showECommercePanel, setShowECommercePanel] = useState(true);
   const [initialPrompt, setInitialPrompt] = useState<string | undefined>(
     undefined,
   );
@@ -534,26 +541,12 @@ function LovartCanvasContent() {
   ) => {
     setIsGenerating(true);
     try {
-      const response = await fetch("/api/generate-image", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt,
-          resolution,
-          aspectRatio,
-          referenceImage,
-          mimeType: referenceImage ? "image/jpeg" : undefined,
-          model,
-        }),
+      const data = await generateImage({
+        prompt,
+        referenceImage,
+        mimeType: referenceImage ? "image/jpeg" : undefined,
+        model,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.details || data.error || "生成失败");
-      }
 
       // Find the selected image-generator element
       const generatorElementId = selectedIds.find(
@@ -618,27 +611,8 @@ function LovartCanvasContent() {
   const handleAiChat = async (prompt: string): Promise<string> => {
     setIsGenerating(true);
     try {
-      const response = await fetch("/api/generate-design", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.details || data.error || "生成失败");
-      }
-
-      if (data.suggestion) {
-        return data.suggestion;
-      }
-
-      return "未收到回复";
+      const suggestion = await generateDesign(prompt);
+      return suggestion || "未收到回复";
     } catch (error) {
       console.error("Chat generation failed:", error);
       throw error;
@@ -646,6 +620,44 @@ function LovartCanvasContent() {
       setIsGenerating(false);
     }
   };
+
+  const handleAddImageToCanvas = useCallback(
+    (imageUrl: string, offsetX: number = 0, offsetY: number = 0) => {
+      const baseX = 300 - pan.x + elements.length * 20;
+      const baseY = 300 - pan.y + elements.length * 20;
+      const newElement: CanvasElement = {
+        id: uuidv4(),
+        type: "image",
+        x: baseX + offsetX,
+        y: baseY + offsetY,
+        width: 400,
+        height: 400,
+        content: imageUrl,
+      };
+      setElements((prev) => [...prev, newElement]);
+      setSelectedIds([newElement.id]);
+    },
+    [pan, elements.length]
+  );
+
+  const handleAddVideoToCanvasFromPanel = useCallback(
+    (videoUrl: string, offsetX: number = 0, offsetY: number = 0) => {
+      const baseX = 300 - pan.x + elements.length * 20;
+      const baseY = 300 - pan.y + elements.length * 20;
+      const newElement: CanvasElement = {
+        id: uuidv4(),
+        type: "video",
+        x: baseX + offsetX,
+        y: baseY + offsetY,
+        width: 420,
+        height: 300,
+        content: videoUrl,
+      };
+      setElements((prev) => [...prev, newElement]);
+      setSelectedIds([newElement.id]);
+    },
+    [pan, elements.length]
+  );
 
   // 显示加载状态
   if (isLoading) {
@@ -707,8 +719,16 @@ function LovartCanvasContent() {
 
         <div className="flex items-center gap-2 pointer-events-auto">
           <button
+            onClick={() => setShowECommercePanel(!showECommercePanel)}
+            className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showECommercePanel ? "bg-blue-100" : "hover:bg-gray-100"}`}
+            title="电商图片工具"
+          >
+            <ImageIcon size={18} className={showECommercePanel ? "text-blue-600" : "text-black"} />
+          </button>
+          <button
             onClick={() => setShowChat(!showChat)}
             className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showChat ? "bg-gray-100" : "hover:bg-gray-100"}`}
+            title="AI设计师"
           >
             <Sparkles size={18} className="text-black" />
           </button>
@@ -723,6 +743,17 @@ function LovartCanvasContent() {
             isGenerating={isGenerating}
             onClose={() => setShowChat(false)}
             initialPrompt={initialPrompt}
+          />
+        </div>
+      )}
+
+      {/* E-Commerce Panel */}
+      {showECommercePanel && (
+        <div className="absolute right-4 top-20 bottom-4 w-[420px] z-40 animate-in slide-in-from-right-4 duration-300">
+          <ECommercePanel
+            onAddToCanvas={handleAddImageToCanvas}
+            onAddVideoToCanvas={handleAddVideoToCanvasFromPanel}
+            onClose={() => setShowECommercePanel(false)}
           />
         </div>
       )}

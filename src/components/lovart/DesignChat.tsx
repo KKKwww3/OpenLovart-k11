@@ -8,6 +8,7 @@ import {
   Loader2,
   ArrowUp,
 } from "lucide-react";
+import { generateDesign } from "@/lib/edge-functions";
 
 interface Message {
   id: string;
@@ -73,26 +74,12 @@ export function DesignChat({ initialPrompt }: DesignChatProps) {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/generate-design", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt: text,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to get response");
-      }
-
-      const data = await response.json();
+      const suggestion = await generateDesign(text);
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: data.suggestion,
+        content: suggestion,
         timestamp: new Date(),
       };
 

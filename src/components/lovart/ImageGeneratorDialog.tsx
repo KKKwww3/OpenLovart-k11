@@ -9,6 +9,7 @@ import {
   ChevronDown,
   Zap,
 } from "lucide-react";
+import { generateImage } from "@/lib/edge-functions";
 
 interface ImageGeneratorDialogProps {
   isOpen: boolean;
@@ -73,26 +74,12 @@ export function ImageGeneratorDialog({
         }
       }
 
-      const response = await fetch("/api/generate-image", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt,
-          resolution,
-          aspectRatio,
-          referenceImage: referenceDataBase64,
-          mimeType: referenceImage?.type,
-          model,
-        }),
+      const data = await generateImage({
+        prompt,
+        referenceImage: referenceDataBase64 ?? undefined,
+        mimeType: referenceImage?.type,
+        model,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.details || data.error || "生成失败");
-      }
 
       setPreviewImage(data.imageData);
     } catch (err) {

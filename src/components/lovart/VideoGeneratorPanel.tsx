@@ -8,6 +8,10 @@ import {
   Video,
   Loader2,
 } from "lucide-react";
+import {
+  generateVideo,
+  getVideoStatus,
+} from "@/lib/edge-functions";
 
 type VideoSize = "720x1280" | "1280x720" | "1024x1792" | "1792x1024";
 type VideoSeconds = 10 | 15;
@@ -31,11 +35,29 @@ export function VideoGeneratorPanel({
   style,
   canvasElements,
 }: VideoGeneratorPanelProps) {
+  const sizes: VideoSize[] = ["720x1280", "1280x720", "1024x1792", "1792x1024"];
+  const secondsOptions: VideoSeconds[] = [10, 15];
+
+  const initialReferenceImage = (() => {
+    if (canvasElements) {
+      const currentElement = canvasElements.find((el) => el.id === elementId);
+      if (currentElement?.referenceImageId) {
+        const sourceImage = canvasElements.find(
+          (el) => el.id === currentElement.referenceImageId,
+        );
+        if (sourceImage?.content) {
+          return sourceImage.content;
+        }
+      }
+    }
+    return null;
+  })();
+
   const [prompt, setPrompt] = useState("");
   const [size, setSize] = useState<VideoSize>("720x1280");
   const [seconds, setSeconds] = useState<VideoSeconds>(10);
   const [referenceImage, setReferenceImage] = useState<File | string | null>(
-    null,
+    initialReferenceImage,
   );
   const [taskId, setTaskId] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -49,31 +71,12 @@ export function VideoGeneratorPanel({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const sizes: VideoSize[] = ["720x1280", "1280x720", "1024x1792", "1792x1024"];
-  const secondsOptions: VideoSeconds[] = [10, 15];
-
-  // Auto-fill reference image from source
-  useEffect(() => {
-    if (canvasElements) {
-      const currentElement = canvasElements.find((el) => el.id === elementId);
-      if (currentElement?.referenceImageId) {
-        const sourceImage = canvasElements.find(
-          (el) => el.id === currentElement.referenceImageId,
-        );
-        if (sourceImage?.content && !referenceImage) {
-          setReferenceImage(sourceImage.content);
-        }
-      }
-    }
-  }, [elementId, canvasElements, referenceImage]);
-
   // Poll for video status
   useEffect(() => {
     if (taskId && isGenerating) {
       pollingIntervalRef.current = setInterval(async () => {
         try {
-          const response = await fetch(`/api/video-status?taskId=${taskId}`);
-          const data = await response.json();
+          const data = await getVideoStatus(taskId);
 
           console.log("Video status:", data);
 
@@ -145,24 +148,12 @@ export function VideoGeneratorPanel({
     }
 
     try {
-      const response = await fetch("/api/generate-video", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          prompt,
-          seconds,
-          size,
-          referenceImage: referenceImageBase64,
-        }),
+      const data = await generateVideo({
+        prompt,
+        seconds,
+        size,
+        referenceImage: referenceImageBase64,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.details || data.error || "生成失败");
-      }
 
       console.log("Video generation started:", data);
       setTaskId(data.taskId);
