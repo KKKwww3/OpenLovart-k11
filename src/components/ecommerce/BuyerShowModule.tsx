@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback } from "react";
 import { Zap, ChevronDown, Users } from "lucide-react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { UploadZone, UploadedFile } from "./UploadZone";
 import { BatchProgress } from "./BatchProgress";
 import { ResultPreview, ResultItem } from "./ResultPreview";
@@ -11,9 +12,10 @@ import { v4 as uuidv4 } from "uuid";
 
 export interface BuyerShowModuleProps {
   onAddToCanvas: (imageUrl: string, x?: number, y?: number) => void;
+  supabase?: SupabaseClient;
 }
 
-export function BuyerShowModule({ onAddToCanvas }: BuyerShowModuleProps) {
+export function BuyerShowModule({ onAddToCanvas, supabase }: BuyerShowModuleProps) {
   const preset = getPromptPreset("buyer-show")!;
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [filesBase64, setFilesBase64] = useState<Map<string, string>>(new Map());
@@ -31,7 +33,7 @@ export function BuyerShowModule({ onAddToCanvas }: BuyerShowModuleProps) {
     startBatch,
     cancelBatch,
     clearTasks,
-  } = useBatchGeneration();
+  } = useBatchGeneration(supabase);
 
   const sceneOptions = preset.paramSchema[0].options || [];
   const petOptions = preset.paramSchema[1].options || [];

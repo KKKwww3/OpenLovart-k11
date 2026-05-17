@@ -1,8 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
+import { callGenerateDesign } from "@/lib/server-edge-functions";
+import { createServerSupabaseClient } from "@/hooks/useSupabase";
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = createServerSupabaseClient();
+    
+    const authHeader = request.headers.get("Authorization");
+    let accessToken: string | undefined;
+    
+    if (authHeader) {
+      accessToken = authHeader.replace("Bearer ", "");
+    } else {
+      const { data: { session } } = await supabase.auth.getSession();
+      accessToken = session?.access_token;
+    }
+
     const { prompt } = await request.json();
 
     if (!prompt || typeof prompt !== "string") {
@@ -12,44 +25,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const apiKey = process.env.XAI_API_KEY;
+    const suggestion = await callGenerateDesign(prompt, accessToken);
 
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "XAI_API_KEY not configured" },
-        { status: 500 },
-      );
-    }
-
-    const client = new OpenAI({
-      apiKey: apiKey,
-      baseURL: "https://api.x.ai/v1",
-      timeout: 360000,
-    });
-
-    const completion = await client.chat.completions.create({
-      model: "grok-4-1-fast-non-reasoning",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a professional design assistant. Based on user's description, provide detailed design suggestions including layout, colors, typography, and visual elements. Be specific and creative.",
-        },
-        {
-          role: "user",
-          content: `Create a design concept for: ${prompt}`,
-        },
-      ],
-    });
-
-    const designSuggestion = completion.choices[0].message.content;
-
-    return NextResponse.json({
-      suggestion: designSuggestion,
-    });
+    return NextResponse.json({ suggestion });
   } catch (error: unknown) {
     console.error("Error generating design:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
+    
+    if (message.includes("登录")) {
+      return NextResponse.json(
+        { error: message, needsAuth: true },
+        { status: 401 },
+      );
+    }
+    
     return NextResponse.json(
       {
         error: "Failed to generate design",

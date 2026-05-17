@@ -1,27 +1,23 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import {
+  createOptionsResponse,
+  createErrorResponse,
+  createJsonResponse,
+  requireAuth,
+} from "../_shared/auth.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return createOptionsResponse();
   }
 
   try {
+    const user = await requireAuth(req);
+
     const { prompt, seconds, size, referenceImage } = await req.json();
 
     if (!prompt || typeof prompt !== "string") {
-      return new Response(
-        JSON.stringify({ error: "Prompt is required" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      return createErrorResponse("Prompt is required", 400);
     }
 
     const apiKey = Deno.env.get("VIDEO_API_KEY");
@@ -29,14 +25,10 @@ Deno.serve(async (req) => {
       Deno.env.get("VIDEO_API_BASE_URL") || "https://www.clockapi.fun/v1";
 
     if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: "VIDEO_API_KEY not configured" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      return createErrorResponse("VIDEO_API_KEY not configured", 500);
     }
+
+    console.log("Generating video for user:", user.id);
 
     const form = new FormData();
     form.append("model", "sora-2");
@@ -49,7 +41,7 @@ Deno.serve(async (req) => {
       const base64Data = referenceImage.includes("base64,")
         ? referenceImage.split("base64,")[1]
         : referenceImage;
-      
+
       const binaryString = atob(base64Data);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
@@ -70,21 +62,18 @@ Deno.serve(async (req) => {
       throw new Error(data.error || "Failed to start video generation");
     }
 
-    return new Response(
-      JSON.stringify({ taskId: data.id, status: data.status }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    return createJsonResponse({ taskId: data.id, status: data.status });
   } catch (error) {
     console.error("Error generating video:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
-    return new Response(
-      JSON.stringify({ error: "Failed to generate video", details: message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
+
+    if (message.includes("Authentication")) {
+      return createErrorResponse(message, 401);
+    }
+
+    return createJsonResponse(
+      { error: "Failed to generate video", details: message },
+      500,
     );
   }
 });

@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
-import { generateImage, GenerateImageResponse } from "@/lib/edge-functions";
+import { generateImage, GenerateImageResponse } from "@/lib/api";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export interface BatchTask {
   id: string;
@@ -30,7 +31,9 @@ export interface UseBatchGenerationReturn {
   clearTasks: () => void;
 }
 
-export function useBatchGeneration(): UseBatchGenerationReturn {
+export function useBatchGeneration(
+  supabase?: SupabaseClient,
+): UseBatchGenerationReturn {
   const [tasks, setTasks] = useState<BatchTask[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const cancelRef = useRef(false);
@@ -57,7 +60,7 @@ export function useBatchGeneration(): UseBatchGenerationReturn {
         referenceImage: task.referenceImage,
         mimeType: task.referenceImage ? "image/jpeg" : undefined,
         model,
-      });
+      }, supabase);
 
       if (!response.imageData) {
         throw new Error(response.textResponse || "未生成图片");
@@ -130,7 +133,7 @@ export function useBatchGeneration(): UseBatchGenerationReturn {
     if (!cancelRef.current && options.onAllComplete) {
       options.onAllComplete(results);
     }
-  }, []);
+  }, [supabase]);
 
   const cancelBatch = useCallback(() => {
     cancelRef.current = true;

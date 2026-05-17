@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback } from "react";
 import { Zap, ChevronDown, Layout } from "lucide-react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { UploadZone, UploadedFile } from "./UploadZone";
 import { BatchProgress } from "./BatchProgress";
 import { ResultPreview, ResultItem } from "./ResultPreview";
@@ -11,9 +12,10 @@ import { v4 as uuidv4 } from "uuid";
 
 export interface DetailTemplateModuleProps {
   onAddToCanvas: (imageUrl: string, x?: number, y?: number) => void;
+  supabase?: SupabaseClient;
 }
 
-export function DetailTemplateModule({ onAddToCanvas }: DetailTemplateModuleProps) {
+export function DetailTemplateModule({ onAddToCanvas, supabase }: DetailTemplateModuleProps) {
   const preset = getPromptPreset("detail-template")!;
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [filesBase64, setFilesBase64] = useState<Map<string, string>>(new Map());
@@ -30,7 +32,7 @@ export function DetailTemplateModule({ onAddToCanvas }: DetailTemplateModuleProp
     startBatch,
     cancelBatch,
     clearTasks,
-  } = useBatchGeneration();
+  } = useBatchGeneration(supabase);
 
   const templateOptions = preset.paramSchema[0].options || [];
 

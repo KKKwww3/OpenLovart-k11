@@ -13,6 +13,7 @@ import {
   X,
   ChevronDown,
 } from "lucide-react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { SceneReplaceModule } from "./SceneReplaceModule";
 import { MultiAngleModule } from "./MultiAngleModule";
 import { ModelGenerationModule } from "./ModelGenerationModule";
@@ -26,6 +27,7 @@ export interface ECommercePanelProps {
   onAddToCanvas: (imageUrl: string, x?: number, y?: number) => void;
   onAddVideoToCanvas?: (videoUrl: string, x?: number, y?: number) => void;
   onClose?: () => void;
+  supabase?: SupabaseClient;
 }
 
 interface ModuleTab {
@@ -90,6 +92,7 @@ export function ECommercePanel({
   onAddToCanvas,
   onAddVideoToCanvas,
   onClose,
+  supabase,
 }: ECommercePanelProps) {
   const [activeTab, setActiveTab] = useState("scene-replace");
   const [showModuleMenu, setShowModuleMenu] = useState(false);
@@ -99,23 +102,24 @@ export function ECommercePanel({
   const renderModule = () => {
     switch (activeTab) {
       case "scene-replace":
-        return <SceneReplaceModule onAddToCanvas={onAddToCanvas} />;
+        return <SceneReplaceModule onAddToCanvas={onAddToCanvas} supabase={supabase} />;
       case "multi-angle":
-        return <MultiAngleModule onAddToCanvas={onAddToCanvas} />;
+        return <MultiAngleModule onAddToCanvas={onAddToCanvas} supabase={supabase} />;
       case "model-generation":
-        return <ModelGenerationModule onAddToCanvas={onAddToCanvas} />;
+        return <ModelGenerationModule onAddToCanvas={onAddToCanvas} supabase={supabase} />;
       case "close-up":
-        return <CloseUpModule onAddToCanvas={onAddToCanvas} />;
+        return <CloseUpModule onAddToCanvas={onAddToCanvas} supabase={supabase} />;
       case "detail-template":
-        return <DetailTemplateModule onAddToCanvas={onAddToCanvas} />;
+        return <DetailTemplateModule onAddToCanvas={onAddToCanvas} supabase={supabase} />;
       case "buyer-show":
-        return <BuyerShowModule onAddToCanvas={onAddToCanvas} />;
+        return <BuyerShowModule onAddToCanvas={onAddToCanvas} supabase={supabase} />;
       case "white-background":
-        return <WhiteBackgroundModule onAddToCanvas={onAddToCanvas} />;
+        return <WhiteBackgroundModule onAddToCanvas={onAddToCanvas} supabase={supabase} />;
       case "main-video":
         return (
           <MainVideoModule
             onAddToCanvas={onAddVideoToCanvas || onAddToCanvas}
+            supabase={supabase}
           />
         );
       default:

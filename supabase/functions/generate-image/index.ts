@@ -1,10 +1,11 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import {
+  corsHeaders,
+  createOptionsResponse,
+  createErrorResponse,
+  createJsonResponse,
+  requireAuth,
+} from "../_shared/auth.ts";
 
 const MODEL_ALIAS_MAP: Record<string, string> = {
   "nano-banana": "google/gemini-3.1-flash-image-preview",
@@ -15,10 +16,12 @@ const DEFAULT_MODEL_ALIAS = "nano-banana";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return createOptionsResponse();
   }
 
   try {
+    const user = await requireAuth(req);
+
     const {
       prompt,
       referenceImage,
@@ -27,13 +30,7 @@ Deno.serve(async (req) => {
     } = await req.json();
 
     if (!prompt || typeof prompt !== "string") {
-      return new Response(
-        JSON.stringify({ error: "Prompt is required" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      return createErrorResponse("Prompt is required", 400);
     }
 
     const apiBaseUrl =
@@ -42,20 +39,16 @@ Deno.serve(async (req) => {
     const apiKey = Deno.env.get("IMAGE_API_KEY");
 
     if (!apiKey) {
-      return new Response(
-        JSON.stringify({ error: "IMAGE_API_KEY not configured" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
+      return createErrorResponse("IMAGE_API_KEY not configured", 500);
     }
 
     const actualModel =
       MODEL_ALIAS_MAP[modelAlias] || MODEL_ALIAS_MAP[DEFAULT_MODEL_ALIAS];
 
     console.log(
-      "Starting image generation:",
+      "Starting image generation for user:",
+      user.id,
+      "model:",
       actualModel,
       "alias:",
       modelAlias || DEFAULT_MODEL_ALIAS,
@@ -114,15 +107,12 @@ Deno.serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("Image API error:", response.status, errorText);
-      return new Response(
-        JSON.stringify({
+      return createJsonResponse(
+        {
           error: "Image generation failed",
           details: `API responded with status ${response.status}`,
-        }),
-        {
-          status: 502,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
         },
+        502,
       );
     }
 
@@ -178,48 +168,39 @@ Deno.serve(async (req) => {
 
     if (!imageData) {
       if (textResponse) {
-        return new Response(
-          JSON.stringify({
+        return createJsonResponse(
+          {
             error: "Model returned text instead of image",
             details: textResponse,
-          }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
           },
+          500,
         );
       }
 
-      return new Response(
-        JSON.stringify({
+      return createJsonResponse(
+        {
           error: "No image was generated",
           details: "No image data found in response.",
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
         },
+        500,
       );
     }
 
-    return new Response(
-      JSON.stringify({ imageData, textResponse }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    return createJsonResponse({ imageData, textResponse });
   } catch (error) {
     console.error("Error generating image:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
-    return new Response(
-      JSON.stringify({
+    
+    if (message.includes("Authentication")) {
+      return createErrorResponse(message, 401);
+    }
+    
+    return createJsonResponse(
+      {
         error: "Failed to generate image",
         details: message,
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
       },
+      500,
     );
   }
 });

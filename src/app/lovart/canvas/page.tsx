@@ -29,7 +29,7 @@ import { v4 as uuidv4 } from "uuid";
 import {
   generateDesign,
   generateImage,
-} from "@/lib/edge-functions";
+} from "@/lib/api";
 
 function LovartCanvasContent() {
   const supabase = useSupabase();
@@ -546,7 +546,7 @@ function LovartCanvasContent() {
         referenceImage,
         mimeType: referenceImage ? "image/jpeg" : undefined,
         model,
-      });
+      }, supabase || undefined);
 
       // Find the selected image-generator element
       const generatorElementId = selectedIds.find(
@@ -611,7 +611,7 @@ function LovartCanvasContent() {
   const handleAiChat = async (prompt: string): Promise<string> => {
     setIsGenerating(true);
     try {
-      const suggestion = await generateDesign(prompt);
+      const suggestion = await generateDesign(prompt, supabase || undefined);
       return suggestion || "未收到回复";
     } catch (error) {
       console.error("Chat generation failed:", error);
@@ -754,6 +754,7 @@ function LovartCanvasContent() {
             onAddToCanvas={handleAddImageToCanvas}
             onAddVideoToCanvas={handleAddVideoToCanvasFromPanel}
             onClose={() => setShowECommercePanel(false)}
+            supabase={supabase || undefined}
           />
         </div>
       )}

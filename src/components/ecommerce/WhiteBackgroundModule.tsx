@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback } from "react";
 import { Zap, ChevronDown, Square } from "lucide-react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { UploadZone, UploadedFile } from "./UploadZone";
 import { BatchProgress } from "./BatchProgress";
 import { ResultPreview, ResultItem } from "./ResultPreview";
@@ -11,10 +12,12 @@ import { v4 as uuidv4 } from "uuid";
 
 export interface WhiteBackgroundModuleProps {
   onAddToCanvas: (imageUrl: string, x?: number, y?: number) => void;
+  supabase?: SupabaseClient;
 }
 
 export function WhiteBackgroundModule({
   onAddToCanvas,
+  supabase,
 }: WhiteBackgroundModuleProps) {
   const preset = getPromptPreset("white-background")!;
   const [files, setFiles] = useState<UploadedFile[]>([]);
@@ -32,7 +35,7 @@ export function WhiteBackgroundModule({
     startBatch,
     cancelBatch,
     clearTasks,
-  } = useBatchGeneration();
+  } = useBatchGeneration(supabase);
 
   const angleOptions = preset.paramSchema[0].options || [];
 

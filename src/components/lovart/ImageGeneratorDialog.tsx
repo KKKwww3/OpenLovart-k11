@@ -9,7 +9,7 @@ import {
   ChevronDown,
   Zap,
 } from "lucide-react";
-import { generateImage } from "@/lib/edge-functions";
+import { generateImage } from "@/lib/api";
 
 interface ImageGeneratorDialogProps {
   isOpen: boolean;

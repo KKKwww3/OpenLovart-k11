@@ -8,7 +8,7 @@ import {
   Loader2,
   ArrowUp,
 } from "lucide-react";
-import { generateDesign } from "@/lib/edge-functions";
+import { generateDesign } from "@/lib/api";
 
 interface Message {
   id: string;

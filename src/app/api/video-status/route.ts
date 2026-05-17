@@ -1,47 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
+import { callGetVideoStatus } from "@/lib/server-edge-functions";
+import { createServerSupabaseClient } from "@/hooks/useSupabase";
 
 export async function GET(request: NextRequest) {
   try {
-    const taskId = request.nextUrl.searchParams.get("taskId");
-    if (!taskId)
+    const supabase = createServerSupabaseClient();
+    
+    const authHeader = request.headers.get("Authorization");
+    let accessToken: string | undefined;
+    
+    if (authHeader) {
+      accessToken = authHeader.replace("Bearer ", "");
+    } else {
+      const { data: { session } } = await supabase.auth.getSession();
+      accessToken = session?.access_token;
+    }
+
+    const { searchParams } = new URL(request.url);
+    const taskId = searchParams.get("taskId");
+
+    if (!taskId) {
       return NextResponse.json(
         { error: "Task ID is required" },
         { status: 400 },
       );
+    }
 
-    const apiKey = process.env.VIDEO_API_KEY;
-    const baseUrl =
-      process.env.VIDEO_API_BASE_URL || "https://www.clockapi.fun/v1";
+    const result = await callGetVideoStatus(taskId, accessToken);
 
-    if (!apiKey)
-      return NextResponse.json(
-        { error: "VIDEO_API_KEY not configured" },
-        { status: 500 },
-      );
-
-    const response = await fetch(`${baseUrl}/videos/${taskId}`, {
-      method: "GET",
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
-
-    const data = await response.json();
-    if (!response.ok)
-      throw new Error(data.error || "Failed to get video status");
-
-    return NextResponse.json({
-      id: data.id,
-      status: data.status,
-      progress: data.progress || 0,
-      videoUrl: data.video_url,
-      model: data.model,
-      createdAt: data.created_at,
-      size: data.size,
-      seconds: data.seconds,
-    });
+    return NextResponse.json(result);
   } catch (error: unknown) {
+    console.error("Error getting video status:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
+    
+    if (message.includes("登录")) {
+      return NextResponse.json(
+        { error: message, needsAuth: true },
+        { status: 401 },
+      );
+    }
+    
     return NextResponse.json(
-      { error: "Failed to get video status", details: message },
+      {
+        error: "Failed to get video status",
+        details: message,
+      },
       { status: 500 },
     );
   }

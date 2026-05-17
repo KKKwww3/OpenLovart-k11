@@ -2,16 +2,18 @@
 
 import React, { useState, useCallback } from "react";
 import { Zap, ChevronDown, Video, Loader2 } from "lucide-react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { UploadZone, UploadedFile } from "./UploadZone";
 import { ResultItem } from "./ResultPreview";
-import { generateVideo, getVideoStatus } from "@/lib/edge-functions";
+import { generateVideo, getVideoStatus } from "@/lib/api";
 import { v4 as uuidv4 } from "uuid";
 
 export interface MainVideoModuleProps {
   onAddToCanvas: (videoUrl: string, x?: number, y?: number) => void;
+  supabase?: SupabaseClient;
 }
 
-export function MainVideoModule({ onAddToCanvas }: MainVideoModuleProps) {
+export function MainVideoModule({ onAddToCanvas, supabase }: MainVideoModuleProps) {
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [filesBase64, setFilesBase64] = useState<Map<string, string>>(new Map());
   const [duration, setDuration] = useState("15秒");
@@ -66,7 +68,7 @@ export function MainVideoModule({ onAddToCanvas }: MainVideoModuleProps) {
           prompt,
           seconds,
           referenceImage: base64,
-        });
+        }, supabase);
 
         setProgress(((i + 0.1) / files.length) * 100);
 
@@ -75,7 +77,7 @@ export function MainVideoModule({ onAddToCanvas }: MainVideoModuleProps) {
 
         while (!completed) {
           await new Promise((r) => setTimeout(r, 3000));
-          const status = await getVideoStatus(taskId);
+          const status = await getVideoStatus(taskId, supabase);
           
           if (status.status === "completed" && status.videoUrl) {
             completed = true;

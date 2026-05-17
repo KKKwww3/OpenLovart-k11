@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback } from "react";
 import { Zap, ChevronDown } from "lucide-react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { UploadZone, UploadedFile } from "./UploadZone";
 import { BatchProgress } from "./BatchProgress";
 import { ResultPreview, ResultItem } from "./ResultPreview";
@@ -11,9 +12,10 @@ import { v4 as uuidv4 } from "uuid";
 
 export interface SceneReplaceModuleProps {
   onAddToCanvas: (imageUrl: string, x?: number, y?: number) => void;
+  supabase?: SupabaseClient;
 }
 
-export function SceneReplaceModule({ onAddToCanvas }: SceneReplaceModuleProps) {
+export function SceneReplaceModule({ onAddToCanvas, supabase }: SceneReplaceModuleProps) {
   const preset = getPromptPreset("scene-replace")!;
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [filesBase64, setFilesBase64] = useState<Map<string, string>>(new Map());
@@ -31,7 +33,7 @@ export function SceneReplaceModule({ onAddToCanvas }: SceneReplaceModuleProps) {
     startBatch,
     cancelBatch,
     clearTasks,
-  } = useBatchGeneration();
+  } = useBatchGeneration(supabase);
 
   const sceneOptions = preset.paramSchema[0].options || [];
   const styleOptions = preset.paramSchema[1].options || [];

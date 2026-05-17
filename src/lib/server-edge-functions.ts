@@ -1,22 +1,11 @@
-import { createClient } from "@supabase/supabase-js";
-import type { SupabaseClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 function getEdgeFunctionUrl(functionName: string): string {
-  if (!supabaseUrl) {
-    throw new Error("NEXT_PUBLIC_SUPABASE_URL is not configured");
+  if (!SUPABASE_URL) {
+    throw new Error("SUPABASE_URL is not configured");
   }
-  return `${supabaseUrl}/functions/v1/${functionName}`;
-}
-
-async function getAccessToken(supabase?: SupabaseClient): Promise<string | null> {
-  if (supabase) {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.access_token || null;
-  }
-  return null;
+  return `${SUPABASE_URL}/functions/v1/${functionName}`;
 }
 
 async function invokeEdgeFunction<T>(
@@ -25,7 +14,7 @@ async function invokeEdgeFunction<T>(
     method?: "GET" | "POST";
     body?: unknown;
     searchParams?: Record<string, string>;
-    supabase?: SupabaseClient;
+    accessToken?: string;
   } = {},
 ): Promise<T> {
   const url = new URL(getEdgeFunctionUrl(functionName));
@@ -36,16 +25,14 @@ async function invokeEdgeFunction<T>(
     });
   }
 
-  const accessToken = await getAccessToken(options.supabase);
-
   const headers: HeadersInit = {
     "Content-Type": "application/json",
   };
 
-  if (accessToken) {
-    headers["Authorization"] = `Bearer ${accessToken}`;
-  } else if (supabaseAnonKey) {
-    headers["Authorization"] = `Bearer ${supabaseAnonKey}`;
+  if (options.accessToken) {
+    headers["Authorization"] = `Bearer ${options.accessToken}`;
+  } else if (SUPABASE_ANON_KEY) {
+    headers["Authorization"] = `Bearer ${SUPABASE_ANON_KEY}`;
   }
 
   const response = await fetch(url.toString(), {
@@ -93,63 +80,56 @@ export interface VideoStatusResponse {
   seconds?: number;
 }
 
-export async function generateDesign(
+export async function callGenerateDesign(
   prompt: string,
-  supabase?: SupabaseClient,
+  accessToken?: string,
 ): Promise<string> {
   const response = await invokeEdgeFunction<GenerateDesignResponse>(
     "generate-design",
     {
       body: { prompt },
-      supabase,
+      accessToken,
     },
   );
   return response.suggestion;
 }
 
-export async function generateImage(
+export async function callGenerateImage(
   options: {
     prompt: string;
     referenceImage?: string;
     mimeType?: string;
     model?: string;
   },
-  supabase?: SupabaseClient,
+  accessToken?: string,
 ): Promise<GenerateImageResponse> {
   return invokeEdgeFunction<GenerateImageResponse>("generate-image", {
     body: options,
-    supabase,
+    accessToken,
   });
 }
 
-export async function generateVideo(
+export async function callGenerateVideo(
   options: {
     prompt: string;
     seconds?: number;
     size?: string;
     referenceImage?: string;
   },
-  supabase?: SupabaseClient,
+  accessToken?: string,
 ): Promise<GenerateVideoResponse> {
   return invokeEdgeFunction<GenerateVideoResponse>("generate-video", {
     body: options,
-    supabase,
+    accessToken,
   });
 }
 
-export async function getVideoStatus(
+export async function callGetVideoStatus(
   taskId: string,
-  supabase?: SupabaseClient,
+  accessToken?: string,
 ): Promise<VideoStatusResponse> {
   return invokeEdgeFunction<VideoStatusResponse>("video-status", {
     searchParams: { taskId },
-    supabase,
+    accessToken,
   });
-}
-
-export function createServerSupabaseClient() {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error("Supabase environment variables are not configured");
-  }
-  return createClient(supabaseUrl, supabaseAnonKey);
 }

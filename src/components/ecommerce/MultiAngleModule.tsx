@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback } from "react";
 import { Zap, ChevronDown, RotateCcw } from "lucide-react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { UploadZone, UploadedFile } from "./UploadZone";
 import { BatchProgress } from "./BatchProgress";
 import { ResultPreview, ResultItem } from "./ResultPreview";
@@ -11,9 +12,10 @@ import { v4 as uuidv4 } from "uuid";
 
 export interface MultiAngleModuleProps {
   onAddToCanvas: (imageUrl: string, x?: number, y?: number) => void;
+  supabase?: SupabaseClient;
 }
 
-export function MultiAngleModule({ onAddToCanvas }: MultiAngleModuleProps) {
+export function MultiAngleModule({ onAddToCanvas, supabase }: MultiAngleModuleProps) {
   const [file, setFile] = useState<UploadedFile[]>([]);
   const [fileBase64, setFileBase64] = useState<string | null>(null);
   const [productType, setProductType] = useState("");
@@ -26,7 +28,7 @@ export function MultiAngleModule({ onAddToCanvas }: MultiAngleModuleProps) {
     startBatch,
     cancelBatch,
     clearTasks,
-  } = useBatchGeneration();
+  } = useBatchGeneration(supabase);
 
   const handleBase64Ready = useCallback((files: { id: string; base64: string }[]) => {
     if (files.length > 0) {
