@@ -21,7 +21,7 @@ OpenLovart 是一个基于 AI 的设计平台，让创意设计变得简单而�
 - **语言**: TypeScript
 - **样式**: Tailwind CSS 4
 - **数据库**: Supabase (PostgreSQL)
-- **AI 服务**: 
+- **AI 服务**:
   - Google Gemini (图像生成)
   - X.AI Grok (设计建议)
 - **部署**: Vercel
@@ -83,15 +83,18 @@ npm run dev
 ## 🔑 获取 API 密钥
 
 ### Supabase (数据库)
+
 1. 访问 [Supabase Dashboard](https://supabase.com/dashboard)
 2. 创建新项目
 3. 在 Settings > API 中找到 URL 和 anon key
 
 ### Google Gemini (AI 服务)
+
 1. 访问 [Google AI Studio](https://makersuite.google.com/app/apikey)
 2. 创建 API Key
 
 ### X.AI Grok (可选)
+
 1. 访问 [X.AI Console](https://console.x.ai/)
 2. 创建 API Key
 

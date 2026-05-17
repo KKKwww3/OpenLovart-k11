@@ -52,7 +52,7 @@ jobs:
         with:
           kimi_api_key: ${{ secrets.KIMI_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          auto_review: 'false'
+          auto_review: "false"
 
   # Job for Issue-related events (triage)
   issue-triage:
@@ -70,4 +70,4 @@ jobs:
         with:
           kimi_api_key: ${{ secrets.KIMI_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          auto_triage: 'false'
+          auto_triage: "false"

@@ -38,6 +38,7 @@
 5. 点击 **Run** 执行 SQL
 
 这将创建以下表：
+
 - `projects` - 存储项目
 - `canvas_elements` - 存储画布元素数据
 - `user_credits` - 存储用户积分
@@ -74,6 +75,7 @@ XAI_API_KEY=your_xai_api_key
 ```
 
 ⚠️ **重要提示**：
+
 - 不要把 `.env.local` 提交到 Git
 - 确保 `.gitignore` 包含 `.env.local`
 - 所有以 `NEXT_PUBLIC_` 开头的变量会暴露到客户端
@@ -132,6 +134,7 @@ npm run dev
 ### 问题 2: 无法保存项目
 
 **检查步骤**：
+
 1. 打开浏览器开发者工具 (F12)
 2. 查看 Console 标签是否有错误信息
 3. 查看 Network 标签，检查 Supabase 请求是否成功
@@ -149,6 +152,7 @@ npm run dev
 ## 📚 数据结构
 
 **projects 表**：
+
 - `id` - 项目唯一标识符 (UUID)
 - `user_id` - 用户 ID（默认 'internal_user_001'）
 - `title` - 项目标题
@@ -157,6 +161,7 @@ npm run dev
 - `updated_at` - 更新时间（自动更新）
 
 **canvas_elements 表**：
+
 - `id` - 元素唯一标识符 (UUID)
 - `project_id` - 关联的项目 ID
 - `element_data` - 元素数据（JSONB 格式）
@@ -164,6 +169,7 @@ npm run dev
 - `updated_at` - 更新时间（自动更新）
 
 **user_credits 表**：
+
 - `user_id` - 用户 ID
 - `credits` - 积分数
 - `created_at` - 创建时间

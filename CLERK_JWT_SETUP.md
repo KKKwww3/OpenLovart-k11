@@ -22,8 +22,9 @@
 4. 点击 **Apply Changes** 或 **Save**
 
 **重要**: 模板名称必须完全匹配 `supabase`，因为代码中使用：
+
 ```typescript
-await session.getToken({ template: 'supabase' })
+await session.getToken({ template: "supabase" });
 ```
 
 ### 步骤 3: 配置 Supabase（如果还没做）
@@ -43,6 +44,7 @@ await session.getToken({ template: 'supabase' })
 2. 检查以下项目：
 
 **应该看到**:
+
 ```
 ✅ Clerk 用户信息 - 已登录
 ✅ JWT Token - 已获取
@@ -51,11 +53,13 @@ await session.getToken({ template: 'supabase' })
 ```
 
 **如果看到**:
+
 ```
 ❌ JWT Token - 未获取
 或
 ❌ Token 中缺少 sub 字段
 ```
+
 说明 JWT 模板配置有问题。
 
 ### 步骤 5: 刷新页面并测试
@@ -90,14 +94,14 @@ JWT 模板应该包含以下声明：
 
 ```javascript
 // 测试获取令牌
-fetch('/api/test-auth')
-  .then(r => r.json())
-  .then(data => {
-    console.log('认证测试:', data);
+fetch("/api/test-auth")
+  .then((r) => r.json())
+  .then((data) => {
+    console.log("认证测试:", data);
     if (data.decodedToken && data.decodedToken.sub) {
-      console.log('✅ JWT 配置正确，sub =', data.decodedToken.sub);
+      console.log("✅ JWT 配置正确，sub =", data.decodedToken.sub);
     } else {
-      console.log('❌ JWT 配置错误，缺少 sub 字段');
+      console.log("❌ JWT 配置错误，缺少 sub 字段");
     }
   });
 ```
@@ -109,6 +113,7 @@ fetch('/api/test-auth')
 **位置**: Clerk Dashboard → 左侧菜单 → **JWT Templates**
 
 如果找不到，可能在：
+
 - **Configure** 部分
 - **Developers** 部分
 - 或直接访问: `https://dashboard.clerk.com/apps/YOUR_APP_ID/jwt-templates`

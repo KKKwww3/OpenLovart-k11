@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 export interface Database {
   public: {
@@ -53,21 +53,21 @@ export interface Database {
         Row: {
           id: string;
           project_id: string;
-          element_data: any;
+          element_data: Record<string, unknown>;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           id?: string;
           project_id: string;
-          element_data: any;
+          element_data: Record<string, unknown>;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           id?: string;
           project_id?: string;
-          element_data?: any;
+          element_data?: Record<string, unknown>;
           created_at?: string;
           updated_at?: string;
         };
@@ -79,6 +79,6 @@ export interface Database {
 export function createServerSupabaseClient() {
   return createClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   );
 }
