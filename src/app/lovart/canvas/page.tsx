@@ -474,7 +474,8 @@ function LovartCanvasContent() {
         prompt: string,
         resolution: '1K' | '2K' | '4K',
         aspectRatio: '1:1' | '4:3' | '16:9',
-        referenceImage?: string
+        referenceImage?: string,
+        model?: string
     ) => {
         setIsGenerating(true);
         try {
@@ -489,6 +490,7 @@ function LovartCanvasContent() {
                     aspectRatio,
                     referenceImage,
                     mimeType: referenceImage ? 'image/jpeg' : undefined,
+                    model,
                 }),
             });
 

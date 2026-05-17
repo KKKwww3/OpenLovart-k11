@@ -11,6 +11,7 @@ interface ImageGeneratorDialogProps {
 
 type Resolution = '1K' | '2K' | '4K';
 type AspectRatio = '1:1' | '4:3' | '16:9';
+type ModelAlias = 'nano-banana' | 'nano-banana-pro';
 
 export function ImageGeneratorDialog({ isOpen, onClose, onImageGenerated }: ImageGeneratorDialogProps) {
     const [prompt, setPrompt] = useState('');
@@ -22,8 +23,10 @@ export function ImageGeneratorDialog({ isOpen, onClose, onImageGenerated }: Imag
     const [resolution, setResolution] = useState<Resolution>('1K');
     const [aspectRatio, setAspectRatio] = useState<AspectRatio>('1:1');
     const [referenceImage, setReferenceImage] = useState<File | null>(null);
+    const [model, setModel] = useState<ModelAlias>('nano-banana');
 
     // Dropdown states
+    const [showModelMenu, setShowModelMenu] = useState(false);
     const [showResolutionMenu, setShowResolutionMenu] = useState(false);
     const [showAspectRatioMenu, setShowAspectRatioMenu] = useState(false);
 
@@ -69,7 +72,8 @@ export function ImageGeneratorDialog({ isOpen, onClose, onImageGenerated }: Imag
                     resolution,
                     aspectRatio,
                     referenceImage: referenceDataBase64,
-                    mimeType: referenceImage?.type
+                    mimeType: referenceImage?.type,
+                    model,
                 }),
             });
 
@@ -125,15 +129,38 @@ export function ImageGeneratorDialog({ isOpen, onClose, onImageGenerated }: Imag
                 <div className="px-6 py-4 flex items-center justify-between border-t border-gray-50">
                     <div className="flex items-center gap-4">
                         {/* Model Selector */}
-                        <div className="flex items-center gap-2 text-gray-700 font-medium cursor-pointer hover:bg-gray-50 px-2 py-1 rounded-lg transition-colors">
-                            <div className="w-5 h-5 bg-black rounded-full flex items-center justify-center">
-                                <Sparkles size={10} className="text-white" />
+                        <div className="relative">
+                            <div
+                                onClick={() => setShowModelMenu(!showModelMenu)}
+                                className="flex items-center gap-2 text-gray-700 font-medium cursor-pointer hover:bg-gray-50 px-2 py-1 rounded-lg transition-colors"
+                            >
+                                <div className="w-5 h-5 bg-black rounded-full flex items-center justify-center">
+                                    <Sparkles size={10} className="text-white" />
+                                </div>
+                                <div className="flex flex-col leading-none">
+                                    <span className="text-sm">{model === 'nano-banana' ? 'Nano Banana' : 'Nano Banana'}</span>
+                                    <span className="text-xs text-gray-500">{model === 'nano-banana' ? '标准版' : 'Pro'}</span>
+                                </div>
+                                <ChevronDown size={14} className="text-gray-400 ml-1" />
                             </div>
-                            <div className="flex flex-col leading-none">
-                                <span className="text-sm">Nano Banana</span>
-                                <span className="text-xs text-gray-500">Pro</span>
-                            </div>
-                            <ChevronDown size={14} className="text-gray-400 ml-1" />
+                            {showModelMenu && (
+                                <div className="absolute top-full mt-1 left-0 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-10 min-w-[160px]">
+                                    <div
+                                        onClick={() => { setModel('nano-banana'); setShowModelMenu(false); }}
+                                        className={`px-3 py-2 cursor-pointer hover:bg-gray-50 ${model === 'nano-banana' ? 'text-blue-500' : 'text-gray-700'}`}
+                                    >
+                                        <span className="text-sm font-medium">Nano Banana</span>
+                                        <span className="text-xs text-gray-400 ml-2">标准版</span>
+                                    </div>
+                                    <div
+                                        onClick={() => { setModel('nano-banana-pro'); setShowModelMenu(false); }}
+                                        className={`px-3 py-2 cursor-pointer hover:bg-gray-50 ${model === 'nano-banana-pro' ? 'text-blue-500' : 'text-gray-700'}`}
+                                    >
+                                        <span className="text-sm font-medium">Nano Banana</span>
+                                        <span className="text-xs text-gray-400 ml-2">Pro</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Reference Image Upload */}

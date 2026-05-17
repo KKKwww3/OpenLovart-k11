@@ -5,10 +5,11 @@ import { Sparkles, ChevronDown, Zap, Image as ImageIcon, Upload, X } from 'lucid
 
 type Resolution = '1K' | '2K' | '4K';
 type AspectRatio = '1:1' | '4:3' | '16:9';
+type ModelAlias = 'nano-banana' | 'nano-banana-pro';
 
 interface ImageGeneratorPanelProps {
     elementId: string;
-    onGenerate: (prompt: string, resolution: Resolution, aspectRatio: AspectRatio, referenceImage?: string) => Promise<void>;
+    onGenerate: (prompt: string, resolution: Resolution, aspectRatio: AspectRatio, referenceImage?: string, model?: ModelAlias) => Promise<void>;
     isGenerating: boolean;
     style?: React.CSSProperties;
     canvasElements?: Array<{ id: string; type: string; content?: string; referenceImageId?: string }>;
@@ -19,6 +20,7 @@ export function ImageGeneratorPanel({ elementId, onGenerate, isGenerating, style
     const [resolution, setResolution] = useState<Resolution>('1K');
     const [aspectRatio, setAspectRatio] = useState<AspectRatio>('1:1');
     const [referenceImage, setReferenceImage] = useState<File | string | null>(null);
+    const [model, setModel] = useState<ModelAlias>('nano-banana');
 
     // Auto-fill reference image from source
     React.useEffect(() => {
@@ -34,6 +36,7 @@ export function ImageGeneratorPanel({ elementId, onGenerate, isGenerating, style
     }, [elementId, canvasElements, referenceImage]);
 
     // Dropdown states
+    const [showModelMenu, setShowModelMenu] = useState(false);
     const [showResolutionMenu, setShowResolutionMenu] = useState(false);
     const [showAspectRatioMenu, setShowAspectRatioMenu] = useState(false);
     const [showReferenceMenu, setShowReferenceMenu] = useState(false);
@@ -78,7 +81,7 @@ export function ImageGeneratorPanel({ elementId, onGenerate, isGenerating, style
             }
         }
 
-        await onGenerate(prompt, resolution, aspectRatio, referenceImageBase64);
+        await onGenerate(prompt, resolution, aspectRatio, referenceImageBase64, model);
     };
 
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,13 +151,36 @@ export function ImageGeneratorPanel({ elementId, onGenerate, isGenerating, style
             <div className="px-4 py-3 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     {/* Model Selector */}
-                    <button className="flex items-center gap-1.5 px-2 py-1 hover:bg-gray-100 rounded-lg transition-colors text-xs font-medium text-gray-700">
-                        <div className="w-3.5 h-3.5 rounded-full bg-black flex items-center justify-center">
-                            <Sparkles size={8} className="text-white" />
-                        </div>
-                        <span>Nano Banana Pro</span>
-                        <ChevronDown size={12} className="text-gray-400" />
-                    </button>
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowModelMenu(!showModelMenu)}
+                            className="flex items-center gap-1.5 px-2 py-1 hover:bg-gray-100 rounded-lg transition-colors text-xs font-medium text-gray-700"
+                        >
+                            <div className="w-3.5 h-3.5 rounded-full bg-black flex items-center justify-center">
+                                <Sparkles size={8} className="text-white" />
+                            </div>
+                            <span>{model === 'nano-banana' ? 'Nano Banana' : 'Nano Banana Pro'}</span>
+                            <ChevronDown size={12} className="text-gray-400" />
+                        </button>
+                        {showModelMenu && (
+                            <div className="absolute bottom-full mb-1 left-0 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-10 min-w-[140px]">
+                                <div
+                                    onClick={() => { setModel('nano-banana'); setShowModelMenu(false); }}
+                                    className={`px-3 py-1.5 text-xs cursor-pointer hover:bg-gray-50 flex items-center gap-2 ${model === 'nano-banana' ? 'text-blue-500 font-medium' : 'text-gray-700'}`}
+                                >
+                                    <Zap size={12} />
+                                    <span>Nano Banana</span>
+                                </div>
+                                <div
+                                    onClick={() => { setModel('nano-banana-pro'); setShowModelMenu(false); }}
+                                    className={`px-3 py-1.5 text-xs cursor-pointer hover:bg-gray-50 flex items-center gap-2 ${model === 'nano-banana-pro' ? 'text-blue-500 font-medium' : 'text-gray-700'}`}
+                                >
+                                    <Sparkles size={12} />
+                                    <span>Nano Banana Pro</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
 
                     {/* Reference Image Button */}
                     <div className="relative">

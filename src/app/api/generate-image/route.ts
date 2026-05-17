@@ -1,9 +1,15 @@
-import { GoogleGenAI } from '@google/genai';
 import { NextRequest, NextResponse } from 'next/server';
+
+const MODEL_ALIAS_MAP: Record<string, string> = {
+    'nano-banana': 'google/gemini-3.1-flash-image-preview',
+    'nano-banana-pro': 'openai/gpt-5.4-image-2',
+};
+
+const DEFAULT_MODEL_ALIAS = 'nano-banana';
 
 export async function POST(request: NextRequest) {
     try {
-        const { prompt, resolution, aspectRatio, referenceImage, mimeType } = await request.json();
+        const { prompt, resolution, aspectRatio, referenceImage, mimeType, model: modelAlias } = await request.json();
 
         if (!prompt || typeof prompt !== 'string') {
             return NextResponse.json(
@@ -12,61 +18,34 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        console.log('Starting image generation with Gemini:', prompt);
-
-        const apiKey = process.env.GEMINI_API_KEY;
+        const apiBaseUrl = process.env.IMAGE_API_BASE_URL || 'https://router-us.xavierwork.eu.cc/api/v1';
+        const apiKey = process.env.IMAGE_API_KEY;
 
         if (!apiKey) {
             return NextResponse.json(
-                { error: 'GEMINI_API_KEY not configured' },
+                { error: 'IMAGE_API_KEY not configured' },
                 { status: 500 }
             );
         }
 
-        const ai = new GoogleGenAI({
-            apiKey: apiKey,
-        });
+        const actualModel = MODEL_ALIAS_MAP[modelAlias] || MODEL_ALIAS_MAP[DEFAULT_MODEL_ALIAS];
 
-        const tools = [
-            {
-                googleSearch: {}
-            },
+        console.log('Starting image generation:', actualModel, 'alias:', modelAlias || DEFAULT_MODEL_ALIAS);
+
+        const userContent: any[] = [
+            { type: 'text', text: prompt },
         ];
 
-        const config = {
-            responseModalities: ['IMAGE', 'TEXT'],
-            imageConfig: {
-                imageSize: resolution || '1K',
-            },
-            tools,
-        } as any;
-
-        const model = 'gemini-3-pro-image-preview';
-
-        const contents = [
-            {
-                role: 'user',
-                parts: [
-                    {
-                        text: prompt,
-                    },
-                ],
-            },
-        ];
-
-        // Add reference image if present
         if (referenceImage) {
             let cleanData = referenceImage;
             let finalMimeType = mimeType || 'image/jpeg';
 
-            // Check if it has a data URI prefix
             if (referenceImage.includes('base64,')) {
                 const matches = referenceImage.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/);
                 if (matches) {
                     finalMimeType = matches[1];
                     cleanData = matches[2];
                 } else {
-                    // Fallback split if regex fails but base64 marker exists
                     const parts = referenceImage.split('base64,');
                     if (parts.length > 1) {
                         cleanData = parts[1];
@@ -74,39 +53,86 @@ export async function POST(request: NextRequest) {
                 }
             }
 
-            contents[0].parts.push({
-                // @ts-ignore
-                inlineData: {
-                    mimeType: finalMimeType,
-                    data: cleanData
-                }
+            userContent.push({
+                type: 'image_url',
+                image_url: {
+                    url: `data:${finalMimeType};base64,${cleanData}`,
+                },
             });
         }
 
-        console.log('Calling Gemini API with model:', model);
+        const messages = [
+            { role: 'user', content: userContent },
+        ];
 
-        const response = await ai.models.generateContentStream({
-            model,
-            config,
-            contents,
+        console.log('Calling image API with model:', actualModel);
+
+        const response = await fetch(`${apiBaseUrl}/chat/completions`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                model: actualModel,
+                messages,
+                modalities: ['image'],
+            }),
         });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Image API error:', response.status, errorText);
+            return NextResponse.json(
+                { error: 'Image generation failed', details: `API responded with status ${response.status}` },
+                { status: 502 }
+            );
+        }
+
+        const result = await response.json();
+
+        console.log('Image API response received');
 
         let imageData: string | null = null;
         let textResponse = '';
 
-        for await (const chunk of response) {
-            if (!chunk.candidates || !chunk.candidates[0]?.content || !chunk.candidates[0]?.content?.parts) {
-                continue;
+        const choice = result.choices?.[0];
+        const message = choice?.message;
+
+        if (message) {
+            if (typeof message.content === 'string') {
+                textResponse = message.content;
+            } else if (Array.isArray(message.content)) {
+                for (const part of message.content) {
+                    if (part.type === 'image_url' && part.image_url?.url) {
+                        imageData = part.image_url.url;
+                    } else if (part.type === 'image' && part.image_url?.url) {
+                        imageData = part.image_url.url;
+                    } else if (part.type === 'text') {
+                        textResponse += part.text || '';
+                    } else if (part.inlineData) {
+                        imageData = `data:${part.inlineData.mimeType || 'image/png'};base64,${part.inlineData.data}`;
+                    }
+                }
             }
 
-            const parts = chunk.candidates[0].content.parts;
-            for (const part of parts) {
-                if (part.inlineData) {
-                    console.log('Found inline data with mimeType:', part.inlineData.mimeType);
-                    imageData = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-                } else if (part.text) {
-                    textResponse += part.text;
+            if (message.images && Array.isArray(message.images)) {
+                for (const img of message.images) {
+                    if (img.url && !imageData) {
+                        imageData = img.url;
+                    }
+                    if (img.image_url?.url && !imageData) {
+                        imageData = img.image_url.url;
+                    }
                 }
+            }
+        }
+
+        if (!imageData && textResponse) {
+            const base64Match = textResponse.match(/data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/);
+            if (base64Match) {
+                imageData = base64Match[0];
+                textResponse = textResponse.replace(base64Match[0], '').trim();
             }
         }
 
@@ -114,14 +140,14 @@ export async function POST(request: NextRequest) {
             if (textResponse) {
                 return NextResponse.json({
                     error: 'Model returned text instead of image',
-                    details: textResponse
+                    details: textResponse,
                 }, { status: 500 });
             }
 
             return NextResponse.json(
                 {
                     error: 'No image was generated',
-                    details: 'No image data found in response.'
+                    details: 'No image data found in response.',
                 },
                 { status: 500 }
             );
