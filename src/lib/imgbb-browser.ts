@@ -14,13 +14,17 @@ export async function uploadImageToImgbbBrowser(
 
     if (!phpSessionId || !authToken) {
       console.error("[imgbb-browser] IMGBB credentials not configured");
-      console.error("[imgbb-browser] Please set NEXT_PUBLIC_IMGBB_PHPSESSID and NEXT_PUBLIC_IMGBB_AUTH_TOKEN in .env.local");
+      console.error(
+        "[imgbb-browser] Please set NEXT_PUBLIC_IMGBB_PHPSESSID and NEXT_PUBLIC_IMGBB_AUTH_TOKEN in .env.local",
+      );
       return null;
     }
 
     let file: File;
     if (typeof image === "string") {
-      const base64Str = image.includes("base64,") ? image.split("base64,")[1] : image;
+      const base64Str = image.includes("base64,")
+        ? image.split("base64,")[1]
+        : image;
       const byteCharacters = atob(base64Str);
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {
@@ -32,7 +36,12 @@ export async function uploadImageToImgbbBrowser(
       file = image;
     }
 
-    console.log("[imgbb-browser] Uploading file:", file.name, "size:", file.size);
+    console.log(
+      "[imgbb-browser] Uploading file:",
+      file.name,
+      "size:",
+      file.size,
+    );
 
     const timestamp = Date.now().toString();
     const formData = new FormData();
@@ -45,8 +54,8 @@ export async function uploadImageToImgbbBrowser(
     const response = await fetch("https://imgbb.com/json", {
       method: "POST",
       headers: {
-        "Accept": "application/json",
-        "Cookie": `PHPSESSID=${phpSessionId}`,
+        Accept: "application/json",
+        Cookie: `PHPSESSID=${phpSessionId}`,
       },
       body: formData,
     });
@@ -59,7 +68,10 @@ export async function uploadImageToImgbbBrowser(
 
     const result = await response.json();
     if (result.status_code !== 200 || !result.image?.url) {
-      console.error("[imgbb-browser] Upload failed, result:", JSON.stringify(result));
+      console.error(
+        "[imgbb-browser] Upload failed, result:",
+        JSON.stringify(result),
+      );
       return null;
     }
 
@@ -71,7 +83,10 @@ export async function uploadImageToImgbbBrowser(
       medium_url: result.image.medium?.url,
     };
   } catch (err) {
-    console.error("[imgbb-browser] Exception:", err instanceof Error ? err.message : err);
+    console.error(
+      "[imgbb-browser] Exception:",
+      err instanceof Error ? err.message : err,
+    );
     return null;
   }
 }

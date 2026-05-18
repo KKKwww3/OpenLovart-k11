@@ -1,7 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { Mail, Lock, Loader2, LogIn, UserPlus, CheckCircle2 } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  Loader2,
+  LogIn,
+  UserPlus,
+  CheckCircle2,
+} from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export interface AuthFormProps {
@@ -10,7 +17,11 @@ export interface AuthFormProps {
   mode?: "login" | "signup";
 }
 
-export function AuthForm({ supabase, onSuccess, mode = "login" }: AuthFormProps) {
+export function AuthForm({
+  supabase,
+  onSuccess,
+  mode = "login",
+}: AuthFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);

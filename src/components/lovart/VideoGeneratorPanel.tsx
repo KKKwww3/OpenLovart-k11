@@ -8,10 +8,7 @@ import {
   Video,
   Loader2,
 } from "lucide-react";
-import {
-  generateVideo,
-  getVideoStatus,
-} from "@/lib/api";
+import { generateVideo, getVideoStatus } from "@/lib/api";
 
 type VideoSize = "720x1280" | "1280x720" | "1024x1792" | "1792x1024";
 type VideoSeconds = 10 | 15;

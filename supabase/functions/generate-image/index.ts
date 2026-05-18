@@ -52,7 +52,10 @@ function parseAiSseChunk(data: string): SseChunk | null {
     }
 
     const finishReason = choice.finish_reason;
-    const done = finishReason === "stop" || finishReason === "length" || finishReason === "content_filter";
+    const done =
+      finishReason === "stop" ||
+      finishReason === "length" ||
+      finishReason === "content_filter";
 
     return { content, done, imageData };
   } catch {
@@ -68,12 +71,7 @@ Deno.serve(async (req) => {
   try {
     const user = await requireAuth(req);
 
-    const {
-      prompt,
-      referenceImage,
-      productImage,
-      model,
-    } = await req.json();
+    const { prompt, referenceImage, productImage, model } = await req.json();
 
     if (!prompt || typeof prompt !== "string") {
       return createErrorResponse("Prompt is required", 400);
@@ -93,7 +91,10 @@ Deno.serve(async (req) => {
     const actualModel = model || Deno.env.get("IMAGE_API_MODEL");
 
     if (!actualModel) {
-      return createErrorResponse("IMAGE_API_MODEL not configured and no model provided in request", 500);
+      return createErrorResponse(
+        "IMAGE_API_MODEL not configured and no model provided in request",
+        500,
+      );
     }
 
     console.log(
@@ -130,55 +131,104 @@ Deno.serve(async (req) => {
 
     console.log("Calling streaming image API with model:", actualModel);
 
-    const aiResponse = await fetch(`${apiBaseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: actualModel,
-        messages,
-        modalities: ["image", "text"],
-        stream: true,
-      }),
-    });
-
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error("Image API error:", aiResponse.status, errorText);
-      return createJsonResponse(
-        {
-          error: "Image generation failed",
-          details: `API responded with status ${aiResponse.status}`,
-        },
-        502,
-      );
-    }
-
-    const aiBody = aiResponse.body;
-    if (!aiBody) {
-      return createJsonResponse(
-        { error: "No response body from AI API" },
-        502,
-      );
-    }
-
-    // Build SSE response
-    let textAccumulator = "";
-    let imageData: string | null = null;
-    let encoder = new TextEncoder();
-
+    const encoder = new TextEncoder();
     const { readable, writable } = new TransformStream();
     const writer = writable.getWriter();
 
-    const writeSse = (event: string, data: string) => {
-      writer.write(encoder.encode(`event: ${event}\ndata: ${data}\n\n`));
+    const writeSse = async (event: string, data: string) => {
+      await writer.write(encoder.encode(`event: ${event}\ndata: ${data}\n\n`));
+      await writer.ready;
     };
 
-    // Process stream in background, write chunks
+    // Start background task for AI API call and stream processing
+    // This allows us to return the Response immediately to the client
     (async () => {
+      let textAccumulator = "";
+      let imageData: string | null = null;
+
       try {
+        // Send status immediately - client will receive this right after connection
+        await writeSse(
+          "status",
+          JSON.stringify({
+            stage: "connecting",
+            message: "正在连接 AI 服务...",
+          }),
+        );
+
+        await writeSse(
+          "status",
+          JSON.stringify({
+            stage: "generating",
+            message: "AI 正在生成图片...",
+          }),
+        );
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 600_000);
+
+        let aiResponse: Response;
+        try {
+          aiResponse = await fetch(`${apiBaseUrl}/chat/completions`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: actualModel,
+              messages,
+              modalities: ["image", "text"],
+              stream: true,
+            }),
+            signal: controller.signal,
+          });
+        } catch (fetchErr) {
+          clearTimeout(timeoutId);
+          const isTimeout =
+            fetchErr instanceof Error && fetchErr.name === "AbortError";
+          console.error(
+            "AI API fetch error:",
+            isTimeout ? "timeout" : fetchErr,
+          );
+          await writeSse(
+            "error",
+            JSON.stringify({
+              error: isTimeout ? "AI 服务响应超时" : "AI 服务连接失败",
+              details: isTimeout
+                ? "120 秒内未收到 AI 响应，请稍后重试"
+                : String(fetchErr),
+            }),
+          );
+          return;
+        }
+
+        clearTimeout(timeoutId);
+
+        if (!aiResponse.ok) {
+          const errorText = await aiResponse.text();
+          console.error("Image API error:", aiResponse.status, errorText);
+          await writeSse(
+            "error",
+            JSON.stringify({
+              error: "AI 服务连接失败",
+              details: `状态码 ${aiResponse.status}: ${errorText.slice(0, 200)}`,
+            }),
+          );
+          return;
+        }
+
+        const aiBody = aiResponse.body;
+        if (!aiBody) {
+          await writeSse(
+            "error",
+            JSON.stringify({
+              error: "AI 服务返回空响应",
+            }),
+          );
+          return;
+        }
+
         const reader = aiBody.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
@@ -203,13 +253,13 @@ Deno.serve(async (req) => {
 
             if (chunk.content) {
               textAccumulator += chunk.content;
-              writeSse("progress", JSON.stringify({
-                text: chunk.content,
-                accumulated: textAccumulator.slice(-200),
-              }));
-
-              // Force flush each progress event to ensure real-time delivery
-              await writer.ready;
+              await writeSse(
+                "progress",
+                JSON.stringify({
+                  text: chunk.content,
+                  accumulated: textAccumulator.slice(-200),
+                }),
+              );
             }
 
             if (chunk.imageData && !imageData) {
@@ -222,20 +272,27 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Final: check if we have image data or try to extract from text
         if (!imageData && textAccumulator) {
           const base64Match = textAccumulator.match(
             /data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/,
           );
           if (base64Match) {
             imageData = base64Match[0];
-            textAccumulator = textAccumulator.replace(base64Match[0], "").trim();
+            textAccumulator = textAccumulator
+              .replace(base64Match[0], "")
+              .trim();
           }
         }
 
-        // Upload generated image to imgbb and return URL
         let imageUrl: string | null = null;
         if (imageData) {
+          await writeSse(
+            "status",
+            JSON.stringify({
+              stage: "uploading",
+              message: "正在上传图片...",
+            }),
+          );
           const result = await uploadImageToImgbb(imageData);
           if (result) {
             imageUrl = result.url;
@@ -243,36 +300,66 @@ Deno.serve(async (req) => {
         }
 
         if (!imageData && !textAccumulator) {
-          writeSse("error", JSON.stringify({
-            error: "No image was generated",
-            details: "No data received from AI API.",
-          }));
+          await writeSse(
+            "error",
+            JSON.stringify({
+              error: "AI 未生成图片",
+              details: "未收到任何数据",
+            }),
+          );
         } else if (!imageData && textAccumulator) {
-          writeSse("error", JSON.stringify({
-            error: "Model returned text instead of image",
-            details: textAccumulator,
-          }));
+          await writeSse(
+            "error",
+            JSON.stringify({
+              error: "AI 返回了文本而非图片",
+              details: textAccumulator.slice(0, 500),
+            }),
+          );
+        } else if (!imageUrl) {
+          await writeSse(
+            "error",
+            JSON.stringify({
+              error: "图片上传失败",
+              details: "请检查 IMGBB_API_KEY 配置",
+            }),
+          );
         } else {
-          writeSse("complete", JSON.stringify({
-            imageUrl: imageUrl || "",
-            textResponse: textAccumulator.replace(/\n+/g, "\n").trim(),
-          }));
+          await writeSse(
+            "complete",
+            JSON.stringify({
+              imageUrl,
+              textResponse: textAccumulator.replace(/\n+/g, "\n").trim(),
+            }),
+          );
         }
       } catch (err) {
         console.error("Stream processing error:", err);
         const msg = err instanceof Error ? err.message : "Unknown stream error";
-        writeSse("error", JSON.stringify({ error: "Stream processing failed", details: msg }));
+        let userMsg = msg;
+        if (
+          msg.includes("error reading a body from connection") ||
+          msg.includes("connection") ||
+          msg.includes("reset")
+        ) {
+          userMsg =
+            "AI 服务连接中断，可能是网络不稳定或模型响应超时，请稍后重试";
+        }
+        await writeSse(
+          "error",
+          JSON.stringify({ error: "流处理失败", details: userMsg }),
+        );
       } finally {
         await writer.close();
       }
     })();
 
+    // Return Response immediately - the background task handles AI API and SSE events
     return new Response(readable, {
       headers: {
         ...corsHeaders,
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
+        Connection: "keep-alive",
       },
     });
   } catch (error) {

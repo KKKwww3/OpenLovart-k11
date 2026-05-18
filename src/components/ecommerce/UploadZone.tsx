@@ -148,9 +148,10 @@ export function UploadZone({
         className={`
           relative border-2 border-dashed rounded-xl p-6 cursor-pointer
           transition-all duration-200
-          ${isDragging
-            ? "border-blue-400 bg-blue-50"
-            : "border-gray-200 hover:border-gray-300 bg-gray-50/50"
+          ${
+            isDragging
+              ? "border-blue-400 bg-blue-50"
+              : "border-gray-200 hover:border-gray-300 bg-gray-50/50"
           }
         `}
       >
@@ -169,9 +170,7 @@ export function UploadZone({
           </div>
           <p className="text-sm text-gray-500">{placeholder}</p>
           {multiple && (
-            <p className="text-xs text-gray-400">
-              最多上传 {maxFiles} 张图片
-            </p>
+            <p className="text-xs text-gray-400">最多上传 {maxFiles} 张图片</p>
           )}
         </div>
       </div>

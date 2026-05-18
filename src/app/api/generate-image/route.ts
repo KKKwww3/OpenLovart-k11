@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/hooks/useSupabase";
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SUPABASE_URL =
+  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON_KEY =
+  process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,11 +16,14 @@ export async function POST(request: NextRequest) {
     if (authHeader) {
       accessToken = authHeader.replace("Bearer ", "");
     } else {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       accessToken = session?.access_token;
     }
 
-    const { prompt, referenceImage, productImage, mimeType, model } = await request.json();
+    const { prompt, referenceImage, productImage, mimeType, model } =
+      await request.json();
 
     if (!prompt || typeof prompt !== "string") {
       return NextResponse.json(
@@ -62,7 +67,10 @@ export async function POST(request: NextRequest) {
       try {
         errorData = await edgeResponse.json();
       } catch {
-        errorData = { error: "Edge function failed", details: `Status ${edgeResponse.status}` };
+        errorData = {
+          error: "Edge function failed",
+          details: `Status ${edgeResponse.status}`,
+        };
       }
 
       if (edgeResponse.status === 401) {
@@ -87,7 +95,7 @@ export async function POST(request: NextRequest) {
       headers: {
         "Content-Type": "text/event-stream",
         "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
+        Connection: "keep-alive",
         "X-Content-Type-Options": "nosniff",
       },
     });

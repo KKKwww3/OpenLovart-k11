@@ -8,7 +8,10 @@ import { BatchProgress } from "../BatchProgress";
 import { ResultPreview, ResultItem } from "../ResultPreview";
 import { ModelSelector, DEFAULT_MODEL_OPTIONS } from "../ModelSelector";
 import { useBatchGeneration } from "@/hooks/useBatchGeneration";
-import { ProductReplacePrompt, PRODUCT_REPLACE_PROMPT } from "./ProductReplacePrompt";
+import {
+  ProductReplacePrompt,
+  PRODUCT_REPLACE_PROMPT,
+} from "./ProductReplacePrompt";
 import { v4 as uuidv4 } from "uuid";
 
 export interface ProductReplaceModuleProps {
@@ -16,12 +19,17 @@ export interface ProductReplaceModuleProps {
   supabase?: SupabaseClient;
 }
 
-export function ProductReplaceModule({ onAddToCanvas, supabase }: ProductReplaceModuleProps) {
+export function ProductReplaceModule({
+  onAddToCanvas,
+  supabase,
+}: ProductReplaceModuleProps) {
   const [sceneFiles, setSceneFiles] = useState<UploadedFile[]>([]);
   const [productFiles, setProductFiles] = useState<UploadedFile[]>([]);
   const productFileMapRef = useRef<Map<string, File>>(new Map());
   const [currentPrompt, setCurrentPrompt] = useState(PRODUCT_REPLACE_PROMPT);
-  const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL_OPTIONS[0].value);
+  const [selectedModel, setSelectedModel] = useState<string>(
+    DEFAULT_MODEL_OPTIONS[0].value,
+  );
   const [results, setResults] = useState<ResultItem[]>([]);
 
   const {
@@ -33,24 +41,18 @@ export function ProductReplaceModule({ onAddToCanvas, supabase }: ProductReplace
     clearTasks,
   } = useBatchGeneration(supabase);
 
-  const handleSceneChange = useCallback(
-    (files: UploadedFile[]) => {
-      setSceneFiles(files);
-    },
-    [],
-  );
+  const handleSceneChange = useCallback((files: UploadedFile[]) => {
+    setSceneFiles(files);
+  }, []);
 
-  const handleProductChange = useCallback(
-    (files: UploadedFile[]) => {
-      files.forEach((f) => {
-        if (f.file) {
-          productFileMapRef.current.set(f.id, f.file);
-        }
-      });
-      setProductFiles(files);
-    },
-    [],
-  );
+  const handleProductChange = useCallback((files: UploadedFile[]) => {
+    files.forEach((f) => {
+      if (f.file) {
+        productFileMapRef.current.set(f.id, f.file);
+      }
+    });
+    setProductFiles(files);
+  }, []);
 
   const handleGenerate = useCallback(async () => {
     if (productFiles.length === 0 || sceneFiles.length === 0) return;
@@ -73,13 +75,17 @@ export function ProductReplaceModule({ onAddToCanvas, supabase }: ProductReplace
       model: selectedModel,
       concurrency: 2,
       onTaskComplete: (taskId, result) => {
-        setResults((prev) => [
-          ...prev,
-          { id: taskId, imageUrl: result },
-        ]);
+        setResults((prev) => [...prev, { id: taskId, imageUrl: result }]);
       },
     });
-  }, [productFiles, sceneFiles, currentPrompt, selectedModel, startBatch, clearTasks]);
+  }, [
+    productFiles,
+    sceneFiles,
+    currentPrompt,
+    selectedModel,
+    startBatch,
+    clearTasks,
+  ]);
 
   const handleAddToCanvas = useCallback(
     (result: ResultItem) => {
@@ -102,10 +108,7 @@ export function ProductReplaceModule({ onAddToCanvas, supabase }: ProductReplace
     <div className="space-y-4">
       <ProductReplacePrompt onPromptChange={setCurrentPrompt} />
 
-      <ModelSelector
-        value={selectedModel}
-        onChange={setSelectedModel}
-      />
+      <ModelSelector value={selectedModel} onChange={setSelectedModel} />
 
       <div className="space-y-3">
         <label className="text-sm font-medium text-gray-700">场景图片</label>
@@ -157,9 +160,7 @@ export function ProductReplaceModule({ onAddToCanvas, supabase }: ProductReplace
       >
         <Zap size={18} className={isProcessing ? "animate-pulse" : ""} />
         <span>
-          {isProcessing
-            ? "生成中..."
-            : `批量替换 (${productFiles.length}张)`}
+          {isProcessing ? "生成中..." : `批量替换 (${productFiles.length}张)`}
         </span>
       </button>
     </div>

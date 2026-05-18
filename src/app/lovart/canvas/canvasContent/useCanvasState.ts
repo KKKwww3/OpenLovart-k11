@@ -26,7 +26,9 @@ export interface CanvasSetters {
   setIsGenerating: React.Dispatch<React.SetStateAction<boolean>>;
   setIsDraggingElement: React.Dispatch<React.SetStateAction<boolean>>;
   setCurrentProjectId: React.Dispatch<React.SetStateAction<string | null>>;
-  setSaveStatus: React.Dispatch<React.SetStateAction<"saved" | "saving" | "offline">>;
+  setSaveStatus: React.Dispatch<
+    React.SetStateAction<"saved" | "saving" | "offline">
+  >;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
   setShowECommercePanel: React.Dispatch<React.SetStateAction<boolean>>;
 }
@@ -51,7 +53,9 @@ export function useCanvasState(): CanvasState & CanvasSetters & CanvasRefs {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDraggingElement, setIsDraggingElement] = useState(false);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
-  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "offline">("saved");
+  const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "offline">(
+    "saved",
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [showECommercePanel, setShowECommercePanel] = useState(true);
 
@@ -68,19 +72,36 @@ export function useCanvasState(): CanvasState & CanvasSetters & CanvasRefs {
   }, [elements]);
 
   return {
-    scale, setScale,
-    pan, setPan,
-    elements, setElements,
-    selectedIds, setSelectedIds,
-    activeTool, setActiveTool,
-    title, setTitle,
-    isGenerating, setIsGenerating,
-    isDraggingElement, setIsDraggingElement,
-    currentProjectId, setCurrentProjectId,
-    saveStatus, setSaveStatus,
-    isLoading, setIsLoading,
-    showECommercePanel, setShowECommercePanel,
-    saveTimeoutRef, isInitializedRef, elementsRef,
-    canvasContainerRef, isSavingRef, needsSaveRef, hasLoadedRef,
+    scale,
+    setScale,
+    pan,
+    setPan,
+    elements,
+    setElements,
+    selectedIds,
+    setSelectedIds,
+    activeTool,
+    setActiveTool,
+    title,
+    setTitle,
+    isGenerating,
+    setIsGenerating,
+    isDraggingElement,
+    setIsDraggingElement,
+    currentProjectId,
+    setCurrentProjectId,
+    saveStatus,
+    setSaveStatus,
+    isLoading,
+    setIsLoading,
+    showECommercePanel,
+    setShowECommercePanel,
+    saveTimeoutRef,
+    isInitializedRef,
+    elementsRef,
+    canvasContainerRef,
+    isSavingRef,
+    needsSaveRef,
+    hasLoadedRef,
   };
 }

@@ -1,14 +1,11 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import { ChevronDown, Zap, Image as ImageIcon, Upload, X } from "lucide-react";
 import {
-  ChevronDown,
-  Zap,
-  Image as ImageIcon,
-  Upload,
-  X,
-} from "lucide-react";
-import { ModelSelector, DEFAULT_MODEL_OPTIONS } from "@/components/ecommerce/ModelSelector";
+  ModelSelector,
+  DEFAULT_MODEL_OPTIONS,
+} from "@/components/ecommerce/ModelSelector";
 
 type Resolution = "1K" | "2K" | "4K";
 type AspectRatio = "1:1" | "4:3" | "16:9";

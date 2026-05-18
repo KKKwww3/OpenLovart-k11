@@ -12,6 +12,7 @@ export interface GenerateImageResponse {
 
 export interface GenerateImageCallbacks {
   onProgress?: (text: string, accumulated: string) => void;
+  onStatus?: (stage: string, message: string) => void;
 }
 
 export interface GenerateImageStreamCallbacks extends GenerateImageCallbacks {
@@ -35,9 +36,13 @@ export interface VideoStatusResponse {
   seconds?: number;
 }
 
-async function getAccessToken(supabase?: SupabaseClient): Promise<string | null> {
+async function getAccessToken(
+  supabase?: SupabaseClient,
+): Promise<string | null> {
   if (supabase) {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     return session?.access_token || null;
   }
   return null;
@@ -48,11 +53,11 @@ export async function generateDesign(
   supabase?: SupabaseClient,
 ): Promise<string> {
   const accessToken = await getAccessToken(supabase);
-  
+
   const headers: HeadersInit = {
     "Content-Type": "application/json",
   };
-  
+
   if (accessToken) {
     headers["Authorization"] = `Bearer ${accessToken}`;
   }
@@ -123,7 +128,11 @@ export async function generateImage(
     if (response.status === 401 || errorData.needsAuth) {
       throw new Error("请先登录后再使用此功能");
     }
-    throw new Error(String(errorData.details || errorData.error || "Failed to generate image"));
+    throw new Error(
+      String(
+        errorData.details || errorData.error || "Failed to generate image",
+      ),
+    );
   }
 
   const reader = response.body?.getReader();
@@ -165,6 +174,12 @@ export async function generateImage(
               const payload = JSON.parse(dataStr);
 
               switch (eventType) {
+                case "status":
+                  callbacks?.onStatus?.(
+                    payload.stage || "",
+                    payload.message || "",
+                  );
+                  break;
                 case "progress":
                   if (payload.text) {
                     textAccumulator += payload.text;
@@ -182,7 +197,11 @@ export async function generateImage(
                   });
                   return;
                 case "error":
-                  reject(new Error(payload.error || payload.details || "Generation failed"));
+                  reject(
+                    new Error(
+                      payload.error || payload.details || "Generation failed",
+                    ),
+                  );
                   return;
               }
             } catch {
@@ -222,7 +241,9 @@ export async function generateImageStream(
 
   const bodyStr = JSON.stringify(options);
   if (bodyStr.length > 4 * 1024 * 1024) {
-    callbacks.onError?.("图片数据过大，请压缩图片后重试（建议单张图片不超过2MB）");
+    callbacks.onError?.(
+      "图片数据过大，请压缩图片后重试（建议单张图片不超过2MB）",
+    );
     return;
   }
 
@@ -250,7 +271,9 @@ export async function generateImageStream(
       callbacks.onError?.("请先登录后再使用此功能");
       return;
     }
-    callbacks.onError?.(String(data.details || data.error || "Failed to generate image"));
+    callbacks.onError?.(
+      String(data.details || data.error || "Failed to generate image"),
+    );
     return;
   }
 
@@ -291,8 +314,14 @@ export async function generateImageStream(
           const payload = JSON.parse(dataStr);
 
           switch (eventType) {
+            case "status":
+              callbacks.onStatus?.(payload.stage || "", payload.message || "");
+              break;
             case "progress":
-              callbacks.onProgress?.(payload.text || "", payload.accumulated || "");
+              callbacks.onProgress?.(
+                payload.text || "",
+                payload.accumulated || "",
+              );
               break;
             case "complete":
               callbacks.onComplete?.({
@@ -302,7 +331,9 @@ export async function generateImageStream(
               });
               return;
             case "error":
-              callbacks.onError?.(payload.error || payload.details || "Unknown error");
+              callbacks.onError?.(
+                payload.error || payload.details || "Unknown error",
+              );
               return;
           }
         } catch {
@@ -314,7 +345,9 @@ export async function generateImageStream(
     // Stream ended without complete/error event
     callbacks.onError?.("Stream ended unexpectedly");
   } catch (err) {
-    callbacks.onError?.(err instanceof Error ? err.message : "Stream read failed");
+    callbacks.onError?.(
+      err instanceof Error ? err.message : "Stream read failed",
+    );
   }
 }
 
@@ -328,11 +361,11 @@ export async function generateVideo(
   supabase?: SupabaseClient,
 ): Promise<GenerateVideoResponse> {
   const accessToken = await getAccessToken(supabase);
-  
+
   const headers: HeadersInit = {
     "Content-Type": "application/json",
   };
-  
+
   if (accessToken) {
     headers["Authorization"] = `Bearer ${accessToken}`;
   }
@@ -360,17 +393,20 @@ export async function getVideoStatus(
   supabase?: SupabaseClient,
 ): Promise<VideoStatusResponse> {
   const accessToken = await getAccessToken(supabase);
-  
+
   const headers: HeadersInit = {};
-  
+
   if (accessToken) {
     headers["Authorization"] = `Bearer ${accessToken}`;
   }
 
-  const response = await fetch(`/api/video-status?taskId=${encodeURIComponent(taskId)}`, {
-    method: "GET",
-    headers,
-  });
+  const response = await fetch(
+    `/api/video-status?taskId=${encodeURIComponent(taskId)}`,
+    {
+      method: "GET",
+      headers,
+    },
+  );
 
   const data = await response.json();
 

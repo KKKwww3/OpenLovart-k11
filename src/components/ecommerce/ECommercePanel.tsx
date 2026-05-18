@@ -102,19 +102,45 @@ export function ECommercePanel({
   const renderModule = () => {
     switch (activeTab) {
       case "product-replace":
-        return <ProductReplaceModule onAddToCanvas={onAddToCanvas} supabase={supabase} />;
+        return (
+          <ProductReplaceModule
+            onAddToCanvas={onAddToCanvas}
+            supabase={supabase}
+          />
+        );
       case "multi-angle":
-        return <MultiAngleModule onAddToCanvas={onAddToCanvas} supabase={supabase} />;
+        return (
+          <MultiAngleModule onAddToCanvas={onAddToCanvas} supabase={supabase} />
+        );
       case "model-generation":
-        return <ModelGenerationModule onAddToCanvas={onAddToCanvas} supabase={supabase} />;
+        return (
+          <ModelGenerationModule
+            onAddToCanvas={onAddToCanvas}
+            supabase={supabase}
+          />
+        );
       case "close-up":
-        return <CloseUpModule onAddToCanvas={onAddToCanvas} supabase={supabase} />;
+        return (
+          <CloseUpModule onAddToCanvas={onAddToCanvas} supabase={supabase} />
+        );
       case "detail-template":
-        return <DetailTemplateModule onAddToCanvas={onAddToCanvas} supabase={supabase} />;
+        return (
+          <DetailTemplateModule
+            onAddToCanvas={onAddToCanvas}
+            supabase={supabase}
+          />
+        );
       case "buyer-show":
-        return <BuyerShowModule onAddToCanvas={onAddToCanvas} supabase={supabase} />;
+        return (
+          <BuyerShowModule onAddToCanvas={onAddToCanvas} supabase={supabase} />
+        );
       case "white-background":
-        return <WhiteBackgroundModule onAddToCanvas={onAddToCanvas} supabase={supabase} />;
+        return (
+          <WhiteBackgroundModule
+            onAddToCanvas={onAddToCanvas}
+            supabase={supabase}
+          />
+        );
       case "main-video":
         return (
           <MainVideoModule

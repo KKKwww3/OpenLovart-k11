@@ -15,12 +15,17 @@ export interface BuyerShowModuleProps {
   supabase?: SupabaseClient;
 }
 
-export function BuyerShowModule({ onAddToCanvas, supabase }: BuyerShowModuleProps) {
+export function BuyerShowModule({
+  onAddToCanvas,
+  supabase,
+}: BuyerShowModuleProps) {
   const preset = getPromptPreset("buyer-show")!;
   const [files, setFiles] = useState<UploadedFile[]>([]);
-  const [filesBase64, setFilesBase64] = useState<Map<string, string>>(new Map());
+  const [filesBase64, setFilesBase64] = useState<Map<string, string>>(
+    new Map(),
+  );
   const [params, setParams] = useState<Record<string, unknown>>(
-    preset.defaultParams
+    preset.defaultParams,
   );
   const [showSceneMenu, setShowSceneMenu] = useState(false);
   const [showPetMenu, setShowPetMenu] = useState(false);
@@ -46,30 +51,43 @@ export function BuyerShowModule({ onAddToCanvas, supabase }: BuyerShowModuleProp
         return next;
       });
     },
-    []
+    [],
   );
 
   const handleGenerate = useCallback(async () => {
     if (files.length === 0) return;
 
-    const tasksToCreate: { id: string; prompt: string; referenceImage?: string }[] = [];
-    
+    const tasksToCreate: {
+      id: string;
+      prompt: string;
+      referenceImage?: string;
+    }[] = [];
+
     files.forEach((file) => {
       const base64 = filesBase64.get(file.id);
-      
+
       tasksToCreate.push({
         id: uuidv4(),
-        prompt: generateModulePrompt("buyer-show", { ...params, shotType: "远景" }),
+        prompt: generateModulePrompt("buyer-show", {
+          ...params,
+          shotType: "远景",
+        }),
         referenceImage: base64,
       });
       tasksToCreate.push({
         id: uuidv4(),
-        prompt: generateModulePrompt("buyer-show", { ...params, shotType: "近景" }),
+        prompt: generateModulePrompt("buyer-show", {
+          ...params,
+          shotType: "近景",
+        }),
         referenceImage: base64,
       });
       tasksToCreate.push({
         id: uuidv4(),
-        prompt: generateModulePrompt("buyer-show", { ...params, shotType: "人物互动" }),
+        prompt: generateModulePrompt("buyer-show", {
+          ...params,
+          shotType: "人物互动",
+        }),
         referenceImage: base64,
       });
     });
@@ -91,7 +109,7 @@ export function BuyerShowModule({ onAddToCanvas, supabase }: BuyerShowModuleProp
     (result: ResultItem) => {
       onAddToCanvas(result.imageUrl);
     },
-    [onAddToCanvas]
+    [onAddToCanvas],
   );
 
   const handleAddAllToCanvas = useCallback(() => {
@@ -165,7 +183,11 @@ export function BuyerShowModule({ onAddToCanvas, supabase }: BuyerShowModuleProp
               className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm hover:bg-gray-100 transition-colors"
             >
               <span className="text-gray-700">
-                {params.hasPet === false ? "不包含" : params.hasPet === "cat" ? "猫咪" : "狗狗"}
+                {params.hasPet === false
+                  ? "不包含"
+                  : params.hasPet === "cat"
+                    ? "猫咪"
+                    : "狗狗"}
               </span>
               <ChevronDown size={16} className="text-gray-400" />
             </button>

@@ -10,7 +10,11 @@ export interface ModelOption {
 }
 
 export const DEFAULT_MODEL_OPTIONS: ModelOption[] = [
-  { value: "google/gemini-3.1-flash-image-preview", label: "Base", desc: "base model" },
+  {
+    value: "google/gemini-3.1-flash-image-preview",
+    label: "Base",
+    desc: "base model",
+  },
   { value: "openai/gpt-5.4-image-2", label: "Pro", desc: "pro model" },
 ];
 
@@ -75,9 +79,7 @@ export function ModelSelector({
                 <div className="flex items-center justify-between">
                   <span
                     className={`text-sm font-medium ${
-                      value === model.value
-                        ? "text-blue-600"
-                        : "text-gray-700"
+                      value === model.value ? "text-blue-600" : "text-gray-700"
                     }`}
                   >
                     {model.label}

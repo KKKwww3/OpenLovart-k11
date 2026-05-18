@@ -58,11 +58,11 @@ Deno.serve(async (req) => {
   } catch (error: unknown) {
     console.error("Error generating design:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
-    
+
     if (message.includes("Authentication")) {
       return createErrorResponse(message, 401);
     }
-    
+
     return createJsonResponse(
       {
         error: "Failed to generate design",

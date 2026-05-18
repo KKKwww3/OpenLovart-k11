@@ -17,7 +17,9 @@ interface UseProjectSaveParams {
   setSaveStatus: (status: "saved" | "saving" | "offline") => void;
   setIsLoading: (loading: boolean) => void;
   setTitle: (title: string) => void;
-  setElements: (elements: CanvasElement[] | ((prev: CanvasElement[]) => CanvasElement[])) => void;
+  setElements: (
+    elements: CanvasElement[] | ((prev: CanvasElement[]) => CanvasElement[]),
+  ) => void;
 }
 
 export function useProjectSave(params: UseProjectSaveParams) {
@@ -149,57 +151,64 @@ export function useProjectSave(params: UseProjectSaveParams) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase, currentProjectId, title, elements]);
 
-  const loadProject = useCallback(async (id: string) => {
-    if (!supabase) {
-      console.log("Load skipped: Supabase client not initialized yet");
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      console.log("Loading project:", id);
-
-      const [projectResult, elementsResult] = await Promise.all([
-        supabase.from("projects").select("*").eq("id", id).single(),
-        supabase.from("canvas_elements").select("*").eq("project_id", id),
-      ]);
-
-      if (projectResult.error) throw projectResult.error;
-      const project = projectResult.data;
-      if (project) {
-        console.log("Project loaded:", project);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setTitle((project as any).title);
+  const loadProject = useCallback(
+    async (id: string) => {
+      if (!supabase) {
+        console.log("Load skipped: Supabase client not initialized yet");
+        return;
       }
 
-      if (elementsResult.error) throw elementsResult.error;
+      try {
+        setIsLoading(true);
+        console.log("Loading project:", id);
 
-      const canvasElements = elementsResult.data;
-      console.log("Canvas elements loaded:", canvasElements?.length || 0);
-      if (canvasElements && canvasElements.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const loadedElements = canvasElements.map((ce: any) => ce.element_data);
-        const uniqueElements = Array.from(
-          new Map(loadedElements.map((item: { id: string }) => [item.id, item])).values(),
-        );
-        console.log("Unique elements after dedup:", uniqueElements.length);
-        setElements(uniqueElements as CanvasElement[]);
-      } else {
-        console.log("No canvas elements found for this project");
-        setElements([]);
+        const [projectResult, elementsResult] = await Promise.all([
+          supabase.from("projects").select("*").eq("id", id).single(),
+          supabase.from("canvas_elements").select("*").eq("project_id", id),
+        ]);
+
+        if (projectResult.error) throw projectResult.error;
+        const project = projectResult.data;
+        if (project) {
+          console.log("Project loaded:", project);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          setTitle((project as any).title);
+        }
+
+        if (elementsResult.error) throw elementsResult.error;
+
+        const canvasElements = elementsResult.data;
+        console.log("Canvas elements loaded:", canvasElements?.length || 0);
+        if (canvasElements && canvasElements.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const loadedElements = canvasElements.map(
+            (ce: any) => ce.element_data,
+          );
+          const uniqueElements = Array.from(
+            new Map(
+              loadedElements.map((item: { id: string }) => [item.id, item]),
+            ).values(),
+          );
+          console.log("Unique elements after dedup:", uniqueElements.length);
+          setElements(uniqueElements as CanvasElement[]);
+        } else {
+          console.log("No canvas elements found for this project");
+          setElements([]);
+        }
+      } catch (error: unknown) {
+        const err = error as Record<string, unknown>;
+        console.error("Failed to load project:", {
+          message: err?.message ?? String(error),
+          code: err?.code,
+          details: err?.details,
+          hint: err?.hint,
+        });
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error: unknown) {
-      const err = error as Record<string, unknown>;
-      console.error("Failed to load project:", {
-        message: err?.message ?? String(error),
-        code: err?.code,
-        details: err?.details,
-        hint: err?.hint,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [supabase, setTitle, setElements, setIsLoading]);
+    },
+    [supabase, setTitle, setElements, setIsLoading],
+  );
 
   useEffect(() => {
     if (isLoading || !isInitializedRef.current) {

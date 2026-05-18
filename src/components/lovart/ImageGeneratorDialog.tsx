@@ -20,7 +20,9 @@ interface ImageGeneratorDialogProps {
 
 type Resolution = "1K" | "2K" | "4K";
 type AspectRatio = "1:1" | "4:3" | "16:9";
-type ModelAlias = "google/gemini-3.1-flash-image-preview" | "openai/gpt-5.4-image-2";
+type ModelAlias =
+  | "google/gemini-3.1-flash-image-preview"
+  | "openai/gpt-5.4-image-2";
 
 export function ImageGeneratorDialog({
   isOpen,
@@ -37,7 +39,9 @@ export function ImageGeneratorDialog({
   const [resolution, setResolution] = useState<Resolution>("1K");
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("1:1");
   const [referenceImage, setReferenceImage] = useState<File | null>(null);
-  const [model, setModel] = useState<ModelAlias>("google/gemini-3.1-flash-image-preview");
+  const [model, setModel] = useState<ModelAlias>(
+    "google/gemini-3.1-flash-image-preview",
+  );
 
   // Dropdown states
   const [showModelMenu, setShowModelMenu] = useState(false);
@@ -65,12 +69,14 @@ export function ImageGeneratorDialog({
     try {
       let referenceImageUrl: string | undefined = undefined;
       if (referenceImage) {
-        const referenceDataBase64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(referenceImage);
-        });
+        const referenceDataBase64 = await new Promise<string>(
+          (resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(referenceImage);
+          },
+        );
 
         const result = await uploadImageToImgbbBrowser(referenceDataBase64);
         if (!result) {
@@ -79,17 +85,21 @@ export function ImageGeneratorDialog({
         referenceImageUrl = result.url;
       }
 
-      const data = await generateImage({
-        prompt,
-        referenceImage: referenceImageUrl,
-        model,
-      }, undefined, {
-        onProgress: (text) => {
-          if (text) {
-            setProgressText((prev) => prev + text);
-          }
+      const data = await generateImage(
+        {
+          prompt,
+          referenceImage: referenceImageUrl,
+          model,
         },
-      });
+        undefined,
+        {
+          onProgress: (text) => {
+            if (text) {
+              setProgressText((prev) => prev + text);
+            }
+          },
+        },
+      );
 
       setPreviewImage(data.imageUrl);
     } catch (err) {
@@ -150,10 +160,14 @@ export function ImageGeneratorDialog({
                 </div>
                 <div className="flex flex-col leading-none">
                   <span className="text-sm">
-                    {model === "google/gemini-3.1-flash-image-preview" ? "Gemini 3.1 Flash" : "GPT 5.4 Image 2"}
+                    {model === "google/gemini-3.1-flash-image-preview"
+                      ? "Gemini 3.1 Flash"
+                      : "GPT 5.4 Image 2"}
                   </span>
                   <span className="text-xs text-gray-500">
-                    {model === "google/gemini-3.1-flash-image-preview" ? "Google" : "OpenAI"}
+                    {model === "google/gemini-3.1-flash-image-preview"
+                      ? "Google"
+                      : "OpenAI"}
                   </span>
                 </div>
                 <ChevronDown size={14} className="text-gray-400 ml-1" />
@@ -167,7 +181,9 @@ export function ImageGeneratorDialog({
                     }}
                     className={`px-3 py-2 cursor-pointer hover:bg-gray-50 ${model === "google/gemini-3.1-flash-image-preview" ? "text-blue-500" : "text-gray-700"}`}
                   >
-                    <span className="text-sm font-medium">Gemini 3.1 Flash</span>
+                    <span className="text-sm font-medium">
+                      Gemini 3.1 Flash
+                    </span>
                     <span className="text-xs text-gray-400 ml-2">Google</span>
                   </div>
                   <div

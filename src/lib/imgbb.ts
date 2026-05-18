@@ -15,8 +15,12 @@ export async function uploadImageToImgbb(
 
     const apiKey = process.env.IMGBB_API_KEY;
     if (!apiKey) {
-      console.error("[imgbb] IMGBB_API_KEY not configured in environment variables");
-      console.error("[imgbb] Please add IMGBB_API_KEY=your_key to your .env.local file");
+      console.error(
+        "[imgbb] IMGBB_API_KEY not configured in environment variables",
+      );
+      console.error(
+        "[imgbb] Please add IMGBB_API_KEY=your_key to your .env.local file",
+      );
       return null;
     }
 
@@ -50,7 +54,10 @@ export async function uploadImageToImgbb(
       medium_url: result.data.medium?.url,
     };
   } catch (err) {
-    console.error("[imgbb] Exception:", err instanceof Error ? err.message : err);
+    console.error(
+      "[imgbb] Exception:",
+      err instanceof Error ? err.message : err,
+    );
     return null;
   }
 }

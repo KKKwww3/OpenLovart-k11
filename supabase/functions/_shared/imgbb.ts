@@ -48,7 +48,10 @@ export async function uploadImageToImgbb(
       mime: result.data.image?.mime,
     };
   } catch (err) {
-    console.error("[imgbb] Exception:", err instanceof Error ? err.message : err);
+    console.error(
+      "[imgbb] Exception:",
+      err instanceof Error ? err.message : err,
+    );
     return null;
   }
 }

@@ -11,9 +11,13 @@ function getEdgeFunctionUrl(functionName: string): string {
   return `${supabaseUrl}/functions/v1/${functionName}`;
 }
 
-async function getAccessToken(supabase?: SupabaseClient): Promise<string | null> {
+async function getAccessToken(
+  supabase?: SupabaseClient,
+): Promise<string | null> {
   if (supabase) {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     return session?.access_token || null;
   }
   return null;

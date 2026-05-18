@@ -26,6 +26,7 @@ component/
 ```
 
 **规则**：
+
 - 目录名 = 原文件名去掉扩展名（`FooBar.js` → `FooBar/`）
 - 入口文件 **必须** 叫 `index.js`，只能包含 `export { ... } from '...'` 语句
 - 子文件命名描述功能：`computeFee.js` / `buildHtml.js` / `generatePdf.js`
@@ -33,21 +34,21 @@ component/
 
 ### 三、命名约定
 
-| 类别 | 命名 | 示例 |
-|------|------|------|
-| 纯计算逻辑 | `computeXxx.js` | `computeFee.js` |
-| HTML/模板构建 | `buildXxx.js` | `buildHtml.js` |
-| 导出/下载 | `generateXxx.js` | `generateImage.js` / `generatePdf.js` |
-| 工具函数 | `utils.js` | `utils.js` |
-| Hook 拆分 | `useXxx.js` | `useSettlement.js` |
+| 类别          | 命名             | 示例                                  |
+| ------------- | ---------------- | ------------------------------------- |
+| 纯计算逻辑    | `computeXxx.js`  | `computeFee.js`                       |
+| HTML/模板构建 | `buildXxx.js`    | `buildHtml.js`                        |
+| 导出/下载     | `generateXxx.js` | `generateImage.js` / `generatePdf.js` |
+| 工具函数      | `utils.js`       | `utils.js`                            |
+| Hook 拆分     | `useXxx.js`      | `useSettlement.js`                    |
 
 ### 四、入口文件 `index.js` 模板
 
 ```js
-export { computeFeeResults } from './computeFee';
-export { buildBillHtml } from './buildHtml';
-export { generateBillImage } from './generateImage';
-export { generateBillPdfText } from './generatePdf';
+export { computeFeeResults } from "./computeFee";
+export { buildBillHtml } from "./buildHtml";
+export { generateBillImage } from "./generateImage";
+export { generateBillPdfText } from "./generatePdf";
 ```
 
 **禁止在 `index.js` 中写 import 逻辑或函数体**，只能是 re-export。

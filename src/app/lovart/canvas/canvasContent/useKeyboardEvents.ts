@@ -6,14 +6,27 @@ import { findNonOverlappingSpot } from "./utils";
 interface UseKeyboardEventsParams {
   elements: CanvasElement[];
   selectedIds: string[];
-  setElements: (elements: CanvasElement[] | ((prev: CanvasElement[]) => CanvasElement[])) => void;
+  setElements: (
+    elements: CanvasElement[] | ((prev: CanvasElement[]) => CanvasElement[]),
+  ) => void;
   setSelectedIds: (ids: string[] | ((prev: string[]) => string[])) => void;
-  setPan: (pan: { x: number; y: number } | ((prev: { x: number; y: number }) => { x: number; y: number })) => void;
+  setPan: (
+    pan:
+      | { x: number; y: number }
+      | ((prev: { x: number; y: number }) => { x: number; y: number }),
+  ) => void;
   onZoomToFit?: () => void;
 }
 
 export function useKeyboardEvents(params: UseKeyboardEventsParams) {
-  const { elements, selectedIds, setElements, setSelectedIds, setPan, onZoomToFit } = params;
+  const {
+    elements,
+    selectedIds,
+    setElements,
+    setSelectedIds,
+    setPan,
+    onZoomToFit,
+  } = params;
 
   const clipboardRef = useRef<CanvasElement[]>([]);
   const spaceRef = useRef(false);
@@ -35,7 +48,10 @@ export function useKeyboardEvents(params: UseKeyboardEventsParams) {
         return;
       }
 
-      if ((e.key === "Delete" || e.key === "Backspace") && selectedIds.length > 0) {
+      if (
+        (e.key === "Delete" || e.key === "Backspace") &&
+        selectedIds.length > 0
+      ) {
         setElements((prev) =>
           prev.filter((el) => !selectedIds.includes(el.id)),
         );
@@ -141,7 +157,9 @@ export function useKeyboardEvents(params: UseKeyboardEventsParams) {
     document.addEventListener("mousedown", handleMouseDown, { capture: true });
 
     return () => {
-      document.removeEventListener("mousedown", handleMouseDown, { capture: true });
+      document.removeEventListener("mousedown", handleMouseDown, {
+        capture: true,
+      });
     };
   }, [setPan]);
 }

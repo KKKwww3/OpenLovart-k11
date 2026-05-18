@@ -157,9 +157,8 @@ export function SingleResultPreview({
           disabled={isAdded}
           className={`
             w-10 h-10 rounded-full flex items-center justify-center transition-colors
-            ${isAdded
-              ? "bg-green-500 text-white"
-              : "bg-white hover:bg-gray-100"
+            ${
+              isAdded ? "bg-green-500 text-white" : "bg-white hover:bg-gray-100"
             }
           `}
           title={isAdded ? "已添加" : "添加到画布"}

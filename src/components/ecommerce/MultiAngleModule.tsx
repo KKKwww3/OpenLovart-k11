@@ -15,7 +15,10 @@ export interface MultiAngleModuleProps {
   supabase?: SupabaseClient;
 }
 
-export function MultiAngleModule({ onAddToCanvas, supabase }: MultiAngleModuleProps) {
+export function MultiAngleModule({
+  onAddToCanvas,
+  supabase,
+}: MultiAngleModuleProps) {
   const [file, setFile] = useState<UploadedFile[]>([]);
   const [fileBase64, setFileBase64] = useState<string | null>(null);
   const [productType, setProductType] = useState("");
@@ -30,11 +33,14 @@ export function MultiAngleModule({ onAddToCanvas, supabase }: MultiAngleModulePr
     clearTasks,
   } = useBatchGeneration(supabase);
 
-  const handleBase64Ready = useCallback((files: { id: string; base64: string }[]) => {
-    if (files.length > 0) {
-      setFileBase64(files[0].base64);
-    }
-  }, []);
+  const handleBase64Ready = useCallback(
+    (files: { id: string; base64: string }[]) => {
+      if (files.length > 0) {
+        setFileBase64(files[0].base64);
+      }
+    },
+    [],
+  );
 
   const handleGenerate = useCallback(async () => {
     if (!fileBase64 || !productType.trim()) return;
@@ -62,7 +68,7 @@ export function MultiAngleModule({ onAddToCanvas, supabase }: MultiAngleModulePr
     (result: ResultItem) => {
       onAddToCanvas(result.imageUrl);
     },
-    [onAddToCanvas]
+    [onAddToCanvas],
   );
 
   const handleAddAllToCanvas = useCallback(() => {

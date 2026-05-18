@@ -3,37 +3,63 @@ import { useCallback } from "react";
 interface UseCanvasOperationsParams {
   elements: { x: number; y: number; width?: number; height?: number }[];
   setScale: (scale: number | ((prev: number) => number)) => void;
-  setPan: (pan: { x: number; y: number } | ((prev: { x: number; y: number }) => { x: number; y: number })) => void;
+  setPan: (
+    pan:
+      | { x: number; y: number }
+      | ((prev: { x: number; y: number }) => { x: number; y: number }),
+  ) => void;
   canvasContainerRef: React.MutableRefObject<HTMLDivElement | null>;
 }
 
 export function useCanvasOperations(params: UseCanvasOperationsParams) {
   const { setScale, setPan, canvasContainerRef, elements } = params;
 
-  const zoomAtPoint = useCallback((scaleChange: number, minScale: number, maxScale: number, clientX?: number, clientY?: number) => {
-    const rect = canvasContainerRef.current?.getBoundingClientRect();
-    if (!rect) return (prev: number) => Math.min(maxScale, Math.max(minScale, prev + scaleChange));
+  const zoomAtPoint = useCallback(
+    (
+      scaleChange: number,
+      minScale: number,
+      maxScale: number,
+      clientX?: number,
+      clientY?: number,
+    ) => {
+      const rect = canvasContainerRef.current?.getBoundingClientRect();
+      if (!rect)
+        return (prev: number) =>
+          Math.min(maxScale, Math.max(minScale, prev + scaleChange));
 
-    const centerX = clientX !== undefined ? clientX - rect.left : rect.width / 2;
-    const centerY = clientY !== undefined ? clientY - rect.top : rect.height / 2;
+      const centerX =
+        clientX !== undefined ? clientX - rect.left : rect.width / 2;
+      const centerY =
+        clientY !== undefined ? clientY - rect.top : rect.height / 2;
 
-    return (prevScale: number) => {
-      const newScale = Math.min(maxScale, Math.max(minScale, prevScale + scaleChange));
-      setPan((prevPan) => ({
-        x: centerX - (centerX - prevPan.x) * (newScale / prevScale),
-        y: centerY - (centerY - prevPan.y) * (newScale / prevScale),
-      }));
-      return newScale;
-    };
-  }, [canvasContainerRef, setPan]);
+      return (prevScale: number) => {
+        const newScale = Math.min(
+          maxScale,
+          Math.max(minScale, prevScale + scaleChange),
+        );
+        setPan((prevPan) => ({
+          x: centerX - (centerX - prevPan.x) * (newScale / prevScale),
+          y: centerY - (centerY - prevPan.y) * (newScale / prevScale),
+        }));
+        return newScale;
+      };
+    },
+    [canvasContainerRef, setPan],
+  );
 
-  const handleZoomIn = useCallback((clientX?: number, clientY?: number) => {
-    setScale(zoomAtPoint(0.1, 0.1, 3, clientX, clientY));
-  }, [setScale, zoomAtPoint]);
+  const handleZoomIn = useCallback(
+    (clientX?: number, clientY?: number) => {
+      setScale(zoomAtPoint(0.1, 0.1, 3, clientX, clientY));
+    },
+    [setScale, zoomAtPoint],
+  );
 
-  const handleZoomOut = useCallback((clientX?: number, clientY?: number) => {
-    setScale(zoomAtPoint(-0.1, 0.1, 3, clientX, clientY));
-  }, [setScale, zoomAtPoint]);
+  const handleZoomOut = useCallback(
+    (clientX?: number, clientY?: number) => {
+      setScale(zoomAtPoint(-0.1, 0.1, 3, clientX, clientY));
+    },
+    [setScale, zoomAtPoint],
+  );
 
   const handleZoomToFit = useCallback(() => {
     if (elements.length === 0) {
@@ -46,7 +72,10 @@ export function useCanvasOperations(params: UseCanvasOperationsParams) {
     if (!container) return;
 
     const padding = 60;
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
 
     elements.forEach((el) => {
       const right = el.x + (el.width || 200);
@@ -66,8 +95,14 @@ export function useCanvasOperations(params: UseCanvasOperationsParams) {
 
     setScale(fitScale);
     setPan({
-      x: (containerW - contentW * fitScale) / 2 - minX * fitScale + padding * fitScale,
-      y: (containerH - contentH * fitScale) / 2 - minY * fitScale + padding * fitScale,
+      x:
+        (containerW - contentW * fitScale) / 2 -
+        minX * fitScale +
+        padding * fitScale,
+      y:
+        (containerH - contentH * fitScale) / 2 -
+        minY * fitScale +
+        padding * fitScale,
     });
   }, [elements, setScale, setPan, canvasContainerRef]);
 

@@ -21,9 +21,11 @@ export function WhiteBackgroundModule({
 }: WhiteBackgroundModuleProps) {
   const preset = getPromptPreset("white-background")!;
   const [files, setFiles] = useState<UploadedFile[]>([]);
-  const [filesBase64, setFilesBase64] = useState<Map<string, string>>(new Map());
+  const [filesBase64, setFilesBase64] = useState<Map<string, string>>(
+    new Map(),
+  );
   const [params, setParams] = useState<Record<string, unknown>>(
-    preset.defaultParams
+    preset.defaultParams,
   );
   const [showAngleMenu, setShowAngleMenu] = useState(false);
   const [results, setResults] = useState<ResultItem[]>([]);
@@ -47,7 +49,7 @@ export function WhiteBackgroundModule({
         return next;
       });
     },
-    []
+    [],
   );
 
   const handleGenerate = useCallback(async () => {
@@ -80,7 +82,7 @@ export function WhiteBackgroundModule({
     (result: ResultItem) => {
       onAddToCanvas(result.imageUrl);
     },
-    [onAddToCanvas]
+    [onAddToCanvas],
   );
 
   const handleAddAllToCanvas = useCallback(() => {
@@ -172,7 +174,9 @@ export function WhiteBackgroundModule({
         }`}
       >
         <Zap size={18} className={isProcessing ? "animate-pulse" : ""} />
-        <span>{isProcessing ? "生成中..." : `批量生成 (${files.length}张)`}</span>
+        <span>
+          {isProcessing ? "生成中..." : `批量生成 (${files.length}张)`}
+        </span>
       </button>
     </div>
   );

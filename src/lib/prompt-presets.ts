@@ -27,7 +27,7 @@ export const PROMPT_PRESETS: PromptPreset[] = [
     description: "上传场景图 + 多产品图 → 同一场景批量替换",
     icon: "Image",
     generatePrompt: (params) => {
-      const productType = params.productType as string || "产品";
+      const productType = (params.productType as string) || "产品";
       return `专业电商产品摄影，将${productType}自然融入指定场景中，保持场景原有布局、光影方向、墙面地面完全一致，产品与场景无缝融合成一张完整的照片，产品主体清晰突出，保持原有花色、材质、质感完全一致，透视关系与场景协调，高清商业摄影，8K分辨率，专业布光，商业级后期处理`;
     },
     defaultParams: {
@@ -61,8 +61,8 @@ export const PROMPT_PRESETS: PromptPreset[] = [
     description: "一张图生成7张不同角度的产品图",
     icon: "Rotate3d",
     generatePrompt: (params) => {
-      const angle = params.angle as string || "正面";
-      const productType = params.productType as string || "产品";
+      const angle = (params.angle as string) || "正面";
+      const productType = (params.productType as string) || "产品";
       return `专业电商产品摄影，${productType}的${angle}视角展示，纯白背景，产品主体居中，专业商业摄影布光，8K高清，细节清晰可见，无阴影，适合电商主图展示`;
     },
     defaultParams: {
@@ -90,10 +90,10 @@ export const PROMPT_PRESETS: PromptPreset[] = [
     description: "在产品主图中添加指定性别、数量、位置的模特",
     icon: "User",
     generatePrompt: (params) => {
-      const gender = params.gender as string || "女性";
-      const count = params.count as number || 1;
-      const pose = params.pose as string || "自然站立";
-      const scene = params.scene as string || "室内场景";
+      const gender = (params.gender as string) || "女性";
+      const count = (params.count as number) || 1;
+      const pose = (params.pose as string) || "自然站立";
+      const scene = (params.scene as string) || "室内场景";
       return `专业电商摄影，在${scene}中展示产品，添加${count}位${gender}模特，${pose}姿势，模特与产品自然互动，专业商业摄影风格，模特穿着时尚得体，表情自然，光影协调，8K高清，商业级后期处理`;
     },
     defaultParams: {
@@ -161,8 +161,8 @@ export const PROMPT_PRESETS: PromptPreset[] = [
     description: "生成细节图（材质特写、功能展示等）",
     icon: "ZoomIn",
     generatePrompt: (params) => {
-      const focusType = params.focusType as string || "材质纹理";
-      const productType = params.productType as string || "产品";
+      const focusType = (params.focusType as string) || "材质纹理";
+      const productType = (params.productType as string) || "产品";
       return `专业电商产品细节摄影，${productType}的${focusType}特写，微距摄影风格，极致清晰展示产品细节，专业布光突出质感，8K超高清，商业级后期处理，背景简洁不抢焦点`;
     },
     defaultParams: {
@@ -204,9 +204,9 @@ export const PROMPT_PRESETS: PromptPreset[] = [
     description: "选择固定模板，输入文字图片批量生成详情页",
     icon: "Layout",
     generatePrompt: (params) => {
-      const template = params.template as string || "标准电商详情页";
-      const productName = params.productName as string || "产品";
-      const features = params.features as string || "高品质、精工艺";
+      const template = (params.template as string) || "标准电商详情页";
+      const productName = (params.productName as string) || "产品";
+      const features = (params.features as string) || "高品质、精工艺";
       return `电商详情页设计，${template}模板风格，产品名称：${productName}，核心卖点：${features}，专业商业设计，清晰的信息层级，高质量产品展示，符合电商平台规范，适合移动端和PC端浏览`;
     },
     defaultParams: {
@@ -255,8 +255,8 @@ export const PROMPT_PRESETS: PromptPreset[] = [
     description: "生成同一场景的远景+近景+人物/宠物三张图",
     icon: "Users",
     generatePrompt: (params) => {
-      const scene = params.scene as string || "家居场景";
-      const hasPet = params.hasPet as boolean || false;
+      const scene = (params.scene as string) || "家居场景";
+      const hasPet = (params.hasPet as boolean) || false;
       const petType = hasPet ? "和可爱的宠物" : "";
       return `真实买家秀风格摄影，${scene}，自然生活化场景，包含远景全景展示、中景产品特写、近景人物互动${petType}，温暖自然光线，生活化布置，真实使用感，8K高清，适合社交媒体分享`;
     },
@@ -302,7 +302,7 @@ export const PROMPT_PRESETS: PromptPreset[] = [
     description: "一键生成白底产品图（保持花色材质）",
     icon: "Square",
     generatePrompt: (params) => {
-      const angle = params.angle as string || "正面";
+      const angle = (params.angle as string) || "正面";
       return `专业电商白底产品图，纯白背景（RGB 255,255,255），产品${angle}展示，保持产品原有花色、材质、光泽完全一致，专业商业摄影布光，无阴影，产品主体清晰锐利，8K高清，符合电商平台主图规范`;
     },
     defaultParams: {
@@ -336,8 +336,8 @@ export const PROMPT_PRESETS: PromptPreset[] = [
     description: "生成产品展示短视频",
     icon: "Video",
     generatePrompt: (params) => {
-      const duration = params.duration as string || "15秒";
-      const style = params.style as string || "产品旋转展示";
+      const duration = (params.duration as string) || "15秒";
+      const style = (params.style as string) || "产品旋转展示";
       return `电商主图视频，${duration}时长，${style}，产品主体清晰，专业商业摄影风格，流畅运镜，适合电商平台主图视频展示，高清画质，产品细节展示完整`;
     },
     defaultParams: {

@@ -18,9 +18,11 @@ export interface CloseUpModuleProps {
 export function CloseUpModule({ onAddToCanvas, supabase }: CloseUpModuleProps) {
   const preset = getPromptPreset("close-up")!;
   const [files, setFiles] = useState<UploadedFile[]>([]);
-  const [filesBase64, setFilesBase64] = useState<Map<string, string>>(new Map());
+  const [filesBase64, setFilesBase64] = useState<Map<string, string>>(
+    new Map(),
+  );
   const [params, setParams] = useState<Record<string, unknown>>(
-    preset.defaultParams
+    preset.defaultParams,
   );
   const [showFocusMenu, setShowFocusMenu] = useState(false);
   const [results, setResults] = useState<ResultItem[]>([]);
@@ -44,7 +46,7 @@ export function CloseUpModule({ onAddToCanvas, supabase }: CloseUpModuleProps) {
         return next;
       });
     },
-    []
+    [],
   );
 
   const handleGenerate = useCallback(async () => {
@@ -77,7 +79,7 @@ export function CloseUpModule({ onAddToCanvas, supabase }: CloseUpModuleProps) {
     (result: ResultItem) => {
       onAddToCanvas(result.imageUrl);
     },
-    [onAddToCanvas]
+    [onAddToCanvas],
   );
 
   const handleAddAllToCanvas = useCallback(() => {
@@ -114,7 +116,9 @@ export function CloseUpModule({ onAddToCanvas, supabase }: CloseUpModuleProps) {
         <input
           type="text"
           value={(params.productType as string) || ""}
-          onChange={(e) => setParams((p) => ({ ...p, productType: e.target.value }))}
+          onChange={(e) =>
+            setParams((p) => ({ ...p, productType: e.target.value }))
+          }
           placeholder="如：皮革沙发、陶瓷花瓶等"
           className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
         />
@@ -172,15 +176,23 @@ export function CloseUpModule({ onAddToCanvas, supabase }: CloseUpModuleProps) {
 
       <button
         onClick={handleGenerate}
-        disabled={files.length === 0 || !(params.productType as string)?.trim() || isProcessing}
+        disabled={
+          files.length === 0 ||
+          !(params.productType as string)?.trim() ||
+          isProcessing
+        }
         className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all ${
-          files.length > 0 && (params.productType as string)?.trim() && !isProcessing
+          files.length > 0 &&
+          (params.productType as string)?.trim() &&
+          !isProcessing
             ? "bg-gray-900 text-white hover:bg-gray-800"
             : "bg-gray-200 text-gray-400 cursor-not-allowed"
         }`}
       >
         <Zap size={18} className={isProcessing ? "animate-pulse" : ""} />
-        <span>{isProcessing ? "生成中..." : `批量生成 (${files.length}张)`}</span>
+        <span>
+          {isProcessing ? "生成中..." : `批量生成 (${files.length}张)`}
+        </span>
       </button>
     </div>
   );

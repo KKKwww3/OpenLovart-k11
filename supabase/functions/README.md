@@ -5,6 +5,7 @@
 在部署 Edge Functions 之前，需要设置以下 secrets：
 
 ### 跳过 JWT 验证 + 指定环境变量文件
+
 supabase functions serve --no-verify-jwt --env-file supabase/functions/.env
 
 ```bash
@@ -57,19 +58,24 @@ supabase functions deploy
 
 ## 4. Edge Functions 列表
 
-| 函数名 | 功能 | 环境变量 |
-|--------|------|----------|
-| generate-design | AI 设计建议生成 | XAI_API_KEY |
-| generate-image | 图像生成 | IMAGE_API_BASE_URL, IMAGE_API_KEY |
-| generate-video | 视频生成 | VIDEO_API_BASE_URL, VIDEO_API_KEY |
-| video-status | 视频状态查询 | VIDEO_API_BASE_URL, VIDEO_API_KEY |
+| 函数名          | 功能            | 环境变量                          |
+| --------------- | --------------- | --------------------------------- |
+| generate-design | AI 设计建议生成 | XAI_API_KEY                       |
+| generate-image  | 图像生成        | IMAGE_API_BASE_URL, IMAGE_API_KEY |
+| generate-video  | 视频生成        | VIDEO_API_BASE_URL, VIDEO_API_KEY |
+| video-status    | 视频状态查询    | VIDEO_API_BASE_URL, VIDEO_API_KEY |
 
 ## 5. 调用方式
 
 Edge Functions 通过 Supabase 客户端调用：
 
 ```typescript
-import { generateDesign, generateImage, generateVideo, getVideoStatus } from '@/lib/edge-functions';
+import {
+  generateDesign,
+  generateImage,
+  generateVideo,
+  getVideoStatus,
+} from "@/lib/edge-functions";
 
 // 生成设计建议
 const suggestion = await generateDesign(prompt);

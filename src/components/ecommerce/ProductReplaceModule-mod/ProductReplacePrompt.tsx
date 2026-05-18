@@ -14,7 +14,9 @@ export interface ProductReplacePromptProps {
   onPromptChange?: (prompt: string) => void;
 }
 
-export function ProductReplacePrompt({ onPromptChange }: ProductReplacePromptProps) {
+export function ProductReplacePrompt({
+  onPromptChange,
+}: ProductReplacePromptProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editablePrompt, setEditablePrompt] = useState(PRODUCT_REPLACE_PROMPT);

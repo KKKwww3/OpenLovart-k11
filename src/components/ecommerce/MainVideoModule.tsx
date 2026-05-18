@@ -13,9 +13,14 @@ export interface MainVideoModuleProps {
   supabase?: SupabaseClient;
 }
 
-export function MainVideoModule({ onAddToCanvas, supabase }: MainVideoModuleProps) {
+export function MainVideoModule({
+  onAddToCanvas,
+  supabase,
+}: MainVideoModuleProps) {
   const [files, setFiles] = useState<UploadedFile[]>([]);
-  const [filesBase64, setFilesBase64] = useState<Map<string, string>>(new Map());
+  const [filesBase64, setFilesBase64] = useState<Map<string, string>>(
+    new Map(),
+  );
   const [duration, setDuration] = useState("15秒");
   const [style, setStyle] = useState("产品旋转展示");
   const [showDurationMenu, setShowDurationMenu] = useState(false);
@@ -45,7 +50,7 @@ export function MainVideoModule({ onAddToCanvas, supabase }: MainVideoModuleProp
         return next;
       });
     },
-    []
+    [],
   );
 
   const handleGenerate = useCallback(async () => {
@@ -64,11 +69,14 @@ export function MainVideoModule({ onAddToCanvas, supabase }: MainVideoModuleProp
         const seconds = parseInt(duration.replace("秒", ""));
         const prompt = `电商主图视频，${duration}时长，${style}，产品主体清晰，专业商业摄影风格，流畅运镜，适合电商平台主图视频展示，高清画质，产品细节展示完整`;
 
-        const { taskId } = await generateVideo({
-          prompt,
-          seconds,
-          referenceImage: base64,
-        }, supabase);
+        const { taskId } = await generateVideo(
+          {
+            prompt,
+            seconds,
+            referenceImage: base64,
+          },
+          supabase,
+        );
 
         setProgress(((i + 0.1) / files.length) * 100);
 
@@ -78,14 +86,14 @@ export function MainVideoModule({ onAddToCanvas, supabase }: MainVideoModuleProp
         while (!completed) {
           await new Promise((r) => setTimeout(r, 3000));
           const status = await getVideoStatus(taskId, supabase);
-          
+
           if (status.status === "completed" && status.videoUrl) {
             completed = true;
             videoUrl = status.videoUrl;
           } else if (status.status === "failed") {
             throw new Error("视频生成失败");
           }
-          
+
           setProgress(((i + status.progress / 100) / files.length) * 100);
         }
 
@@ -108,7 +116,7 @@ export function MainVideoModule({ onAddToCanvas, supabase }: MainVideoModuleProp
     (result: ResultItem) => {
       onAddToCanvas(result.imageUrl);
     },
-    [onAddToCanvas]
+    [onAddToCanvas],
   );
 
   const handleAddAllToCanvas = useCallback(() => {
@@ -277,7 +285,9 @@ export function MainVideoModule({ onAddToCanvas, supabase }: MainVideoModuleProp
         ) : (
           <Video size={18} />
         )}
-        <span>{isGenerating ? "生成中..." : `生成视频 (${files.length}个)`}</span>
+        <span>
+          {isGenerating ? "生成中..." : `生成视频 (${files.length}个)`}
+        </span>
       </button>
     </div>
   );

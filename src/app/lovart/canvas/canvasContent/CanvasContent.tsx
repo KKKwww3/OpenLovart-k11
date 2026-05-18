@@ -1,12 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-  ChevronDown,
-  Cloud,
-  CloudOff,
-  Image as ImageIcon,
-} from "lucide-react";
+import { ChevronDown, Cloud, CloudOff, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { FloatingToolbar } from "@/components/lovart/FloatingToolbar";
@@ -32,20 +27,37 @@ function CanvasContent() {
 
   const state = useCanvasState();
   const {
-    scale, setScale,
-    pan, setPan,
-    elements, setElements,
-    selectedIds, setSelectedIds,
-    activeTool, setActiveTool,
-    title, setTitle,
-    isGenerating, setIsGenerating,
-    isDraggingElement, setIsDraggingElement,
-    currentProjectId, setCurrentProjectId,
-    saveStatus, setSaveStatus,
-    isLoading, setIsLoading,
-    showECommercePanel, setShowECommercePanel,
-    saveTimeoutRef, isInitializedRef, elementsRef,
-    canvasContainerRef, isSavingRef, needsSaveRef, hasLoadedRef,
+    scale,
+    setScale,
+    pan,
+    setPan,
+    elements,
+    setElements,
+    selectedIds,
+    setSelectedIds,
+    activeTool,
+    setActiveTool,
+    title,
+    setTitle,
+    isGenerating,
+    setIsGenerating,
+    isDraggingElement,
+    setIsDraggingElement,
+    currentProjectId,
+    setCurrentProjectId,
+    saveStatus,
+    setSaveStatus,
+    isLoading,
+    setIsLoading,
+    showECommercePanel,
+    setShowECommercePanel,
+    saveTimeoutRef,
+    isInitializedRef,
+    elementsRef,
+    canvasContainerRef,
+    isSavingRef,
+    needsSaveRef,
+    hasLoadedRef,
   } = state;
 
   const [progressText, setProgressText] = useState("");
@@ -68,12 +80,22 @@ function CanvasContent() {
   });
 
   const elementOps = useElementHandlers({
-    elementsRef, pan, setElements, setSelectedIds, setActiveTool,
+    elementsRef,
+    pan,
+    setElements,
+    setSelectedIds,
+    setActiveTool,
   });
 
   const generateOps = useGenerateHandlers({
-    elementsRef, selectedIds, pan, supabase,
-    setElements, setSelectedIds, setActiveTool, setIsGenerating,
+    elementsRef,
+    selectedIds,
+    pan,
+    supabase,
+    setElements,
+    setSelectedIds,
+    setActiveTool,
+    setIsGenerating,
     onProgress: (text) => {
       setProgressText((prev) => (prev + text).slice(-200));
     },
@@ -87,15 +109,28 @@ function CanvasContent() {
     model?: string,
   ) => {
     setProgressText("");
-    return generateOps.handleGenerateImage(prompt, resolution, aspectRatio, referenceImage, model);
+    return generateOps.handleGenerateImage(
+      prompt,
+      resolution,
+      aspectRatio,
+      referenceImage,
+      model,
+    );
   };
 
   const canvasOps = useCanvasOperations({
-    elements, setScale, setPan, canvasContainerRef,
+    elements,
+    setScale,
+    setPan,
+    canvasContainerRef,
   });
 
   useKeyboardEvents({
-    elements, selectedIds, setElements, setSelectedIds, setPan,
+    elements,
+    selectedIds,
+    setElements,
+    setSelectedIds,
+    setPan,
     onZoomToFit: canvasOps.handleZoomToFit,
   });
 
@@ -179,7 +214,10 @@ function CanvasContent() {
             className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showECommercePanel ? "bg-blue-100" : "hover:bg-gray-100"}`}
             title="电商图片工具"
           >
-            <ImageIcon size={18} className={showECommercePanel ? "text-blue-600" : "text-black"} />
+            <ImageIcon
+              size={18}
+              className={showECommercePanel ? "text-blue-600" : "text-black"}
+            />
           </button>
         </div>
       </header>
@@ -206,7 +244,9 @@ function CanvasContent() {
             onSelect={setSelectedIds}
             onElementChange={elementOps.handleElementChange}
             onDelete={elementOps.handleDelete}
-            onAddElement={(element) => setElements((prev) => [...prev, element])}
+            onAddElement={(element) =>
+              setElements((prev) => [...prev, element])
+            }
             activeTool={activeTool}
             onDragStart={() => setIsDraggingElement(true)}
             onDragEnd={() => setIsDraggingElement(false)}
@@ -223,42 +263,56 @@ function CanvasContent() {
             onOpenVideoGenerator={elementOps.handleOpenVideoGenerator}
           />
 
-          {selectedIds.length === 1 && !isDraggingElement && (() => {
-            const selectedEl = elements.find((el) => el.id === selectedIds[0]);
-            if (selectedEl?.type === "image-generator") {
-              const left = selectedEl.x * scale + pan.x;
-              const top = (selectedEl.y + (selectedEl.height || 400)) * scale + pan.y + 20;
-              return (
-                <ImageGeneratorPanel
-                  elementId={selectedIds[0]}
-                  onGenerate={handleGenerateImage}
-                  isGenerating={isGenerating}
-                  progressText={progressText}
-                  canvasElements={elements}
-                  style={{ left: `${left}px`, top: `${top}px` }}
-                />
+          {selectedIds.length === 1 &&
+            !isDraggingElement &&
+            (() => {
+              const selectedEl = elements.find(
+                (el) => el.id === selectedIds[0],
               );
-            }
-            return null;
-          })()}
+              if (selectedEl?.type === "image-generator") {
+                const left = selectedEl.x * scale + pan.x;
+                const top =
+                  (selectedEl.y + (selectedEl.height || 400)) * scale +
+                  pan.y +
+                  20;
+                return (
+                  <ImageGeneratorPanel
+                    elementId={selectedIds[0]}
+                    onGenerate={handleGenerateImage}
+                    isGenerating={isGenerating}
+                    progressText={progressText}
+                    canvasElements={elements}
+                    style={{ left: `${left}px`, top: `${top}px` }}
+                  />
+                );
+              }
+              return null;
+            })()}
 
-          {selectedIds.length === 1 && !isDraggingElement && (() => {
-            const selectedEl = elements.find((el) => el.id === selectedIds[0]);
-            if (selectedEl?.type === "video-generator") {
-              const left = selectedEl.x * scale + pan.x;
-              const top = (selectedEl.y + (selectedEl.height || 300)) * scale + pan.y + 20;
-              return (
-                <VideoGeneratorPanel
-                  elementId={selectedIds[0]}
-                  onGenerate={generateOps.handleGenerateVideo}
-                  isGenerating={isGenerating}
-                  canvasElements={elements}
-                  style={{ left: `${left}px`, top: `${top}px` }}
-                />
+          {selectedIds.length === 1 &&
+            !isDraggingElement &&
+            (() => {
+              const selectedEl = elements.find(
+                (el) => el.id === selectedIds[0],
               );
-            }
-            return null;
-          })()}
+              if (selectedEl?.type === "video-generator") {
+                const left = selectedEl.x * scale + pan.x;
+                const top =
+                  (selectedEl.y + (selectedEl.height || 300)) * scale +
+                  pan.y +
+                  20;
+                return (
+                  <VideoGeneratorPanel
+                    elementId={selectedIds[0]}
+                    onGenerate={generateOps.handleGenerateVideo}
+                    isGenerating={isGenerating}
+                    canvasElements={elements}
+                    style={{ left: `${left}px`, top: `${top}px` }}
+                  />
+                );
+              }
+              return null;
+            })()}
 
           <ZoomControls
             scale={scale}

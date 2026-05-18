@@ -15,12 +15,17 @@ export interface DetailTemplateModuleProps {
   supabase?: SupabaseClient;
 }
 
-export function DetailTemplateModule({ onAddToCanvas, supabase }: DetailTemplateModuleProps) {
+export function DetailTemplateModule({
+  onAddToCanvas,
+  supabase,
+}: DetailTemplateModuleProps) {
   const preset = getPromptPreset("detail-template")!;
   const [files, setFiles] = useState<UploadedFile[]>([]);
-  const [filesBase64, setFilesBase64] = useState<Map<string, string>>(new Map());
+  const [filesBase64, setFilesBase64] = useState<Map<string, string>>(
+    new Map(),
+  );
   const [params, setParams] = useState<Record<string, unknown>>(
-    preset.defaultParams
+    preset.defaultParams,
   );
   const [showTemplateMenu, setShowTemplateMenu] = useState(false);
   const [results, setResults] = useState<ResultItem[]>([]);
@@ -44,7 +49,7 @@ export function DetailTemplateModule({ onAddToCanvas, supabase }: DetailTemplate
         return next;
       });
     },
-    []
+    [],
   );
 
   const handleGenerate = useCallback(async () => {
@@ -79,7 +84,7 @@ export function DetailTemplateModule({ onAddToCanvas, supabase }: DetailTemplate
     (result: ResultItem) => {
       onAddToCanvas(result.imageUrl);
     },
-    [onAddToCanvas]
+    [onAddToCanvas],
   );
 
   const handleAddAllToCanvas = useCallback(() => {
@@ -149,7 +154,9 @@ export function DetailTemplateModule({ onAddToCanvas, supabase }: DetailTemplate
         <input
           type="text"
           value={(params.productName as string) || ""}
-          onChange={(e) => setParams((p) => ({ ...p, productName: e.target.value }))}
+          onChange={(e) =>
+            setParams((p) => ({ ...p, productName: e.target.value }))
+          }
           placeholder="输入产品名称"
           className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
         />
@@ -159,7 +166,9 @@ export function DetailTemplateModule({ onAddToCanvas, supabase }: DetailTemplate
         <label className="text-sm font-medium text-gray-700">核心卖点</label>
         <textarea
           value={(params.features as string) || ""}
-          onChange={(e) => setParams((p) => ({ ...p, features: e.target.value }))}
+          onChange={(e) =>
+            setParams((p) => ({ ...p, features: e.target.value }))
+          }
           placeholder="如：高品质、精工艺、环保材质"
           rows={2}
           className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 resize-none"
@@ -185,15 +194,25 @@ export function DetailTemplateModule({ onAddToCanvas, supabase }: DetailTemplate
 
       <button
         onClick={handleGenerate}
-        disabled={files.length === 0 || !(params.productName as string)?.trim() || !(params.features as string)?.trim() || isProcessing}
+        disabled={
+          files.length === 0 ||
+          !(params.productName as string)?.trim() ||
+          !(params.features as string)?.trim() ||
+          isProcessing
+        }
         className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all ${
-          files.length > 0 && (params.productName as string)?.trim() && (params.features as string)?.trim() && !isProcessing
+          files.length > 0 &&
+          (params.productName as string)?.trim() &&
+          (params.features as string)?.trim() &&
+          !isProcessing
             ? "bg-gray-900 text-white hover:bg-gray-800"
             : "bg-gray-200 text-gray-400 cursor-not-allowed"
         }`}
       >
         <Zap size={18} className={isProcessing ? "animate-pulse" : ""} />
-        <span>{isProcessing ? "生成中..." : `批量生成 (${files.length}张)`}</span>
+        <span>
+          {isProcessing ? "生成中..." : `批量生成 (${files.length}张)`}
+        </span>
       </button>
     </div>
   );

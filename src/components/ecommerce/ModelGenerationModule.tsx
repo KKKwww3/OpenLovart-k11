@@ -21,9 +21,11 @@ export function ModelGenerationModule({
 }: ModelGenerationModuleProps) {
   const preset = getPromptPreset("model-generation")!;
   const [files, setFiles] = useState<UploadedFile[]>([]);
-  const [filesBase64, setFilesBase64] = useState<Map<string, string>>(new Map());
+  const [filesBase64, setFilesBase64] = useState<Map<string, string>>(
+    new Map(),
+  );
   const [params, setParams] = useState<Record<string, unknown>>(
-    preset.defaultParams
+    preset.defaultParams,
   );
   const [showGenderMenu, setShowGenderMenu] = useState(false);
   const [showPoseMenu, setShowPoseMenu] = useState(false);
@@ -51,7 +53,7 @@ export function ModelGenerationModule({
         return next;
       });
     },
-    []
+    [],
   );
 
   const handleGenerate = useCallback(async () => {
@@ -84,7 +86,7 @@ export function ModelGenerationModule({
     (result: ResultItem) => {
       onAddToCanvas(result.imageUrl);
     },
-    [onAddToCanvas]
+    [onAddToCanvas],
   );
 
   const handleAddAllToCanvas = useCallback(() => {

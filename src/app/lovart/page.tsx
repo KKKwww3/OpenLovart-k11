@@ -204,7 +204,9 @@ export default function LovartDashboard() {
               {projects.length === 0 && !isLoading && (
                 <div className="text-center py-12 text-gray-400">
                   <p className="mb-2">还没有项目</p>
-                  <p className="text-sm">点击 &quot;新建项目&quot; 开始创作！</p>
+                  <p className="text-sm">
+                    点击 &quot;新建项目&quot; 开始创作！
+                  </p>
                 </div>
               )}
             </div>

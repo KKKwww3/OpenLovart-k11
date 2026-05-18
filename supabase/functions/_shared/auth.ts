@@ -36,7 +36,10 @@ export function createErrorResponse(
   });
 }
 
-export function createJsonResponse(data: unknown, status: number = 200): Response {
+export function createJsonResponse(
+  data: unknown,
+  status: number = 200,
+): Response {
   return new Response(JSON.stringify(data), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -45,7 +48,7 @@ export function createJsonResponse(data: unknown, status: number = 200): Respons
 
 export async function authenticateUser(req: Request): Promise<AuthResult> {
   const authHeader = req.headers.get("Authorization");
-  
+
   if (!authHeader) {
     return {
       success: false,
@@ -54,7 +57,7 @@ export async function authenticateUser(req: Request): Promise<AuthResult> {
   }
 
   const token = authHeader.replace("Bearer ", "");
-  
+
   if (!token) {
     return {
       success: false,
@@ -64,16 +67,19 @@ export async function authenticateUser(req: Request): Promise<AuthResult> {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-    
+
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser(token);
+
     if (error) {
       return {
         success: false,
         error: `Authentication failed: ${error.message}`,
       };
     }
-    
+
     if (!user) {
       return {
         success: false,
@@ -99,11 +105,11 @@ export async function authenticateUser(req: Request): Promise<AuthResult> {
 
 export async function requireAuth(req: Request): Promise<AuthUser> {
   const authResult = await authenticateUser(req);
-  
+
   if (!authResult.success) {
     throw new Error(authResult.error || "Authentication required");
   }
-  
+
   return authResult.user!;
 }
 
@@ -113,13 +119,13 @@ export function getServiceSupabase() {
 
 export async function getUserCredits(userId: string): Promise<number> {
   const supabase = getServiceSupabase();
-  
+
   const { data, error } = await supabase
     .from("user_credits")
     .select("credits")
     .eq("user_id", userId)
     .single();
-  
+
   if (error) {
     if (error.code === "PGRST116") {
       const { data: newData, error: insertError } = await supabase
@@ -127,39 +133,44 @@ export async function getUserCredits(userId: string): Promise<number> {
         .insert({ user_id: userId, credits: 100 })
         .select("credits")
         .single();
-      
+
       if (insertError) {
-        throw new Error(`Failed to create user credits: ${insertError.message}`);
+        throw new Error(
+          `Failed to create user credits: ${insertError.message}`,
+        );
       }
-      
+
       return newData.credits;
     }
     throw new Error(`Failed to get user credits: ${error.message}`);
   }
-  
+
   return data.credits;
 }
 
-export async function deductCredits(userId: string, amount: number): Promise<boolean> {
+export async function deductCredits(
+  userId: string,
+  amount: number,
+): Promise<boolean> {
   const supabase = getServiceSupabase();
-  
+
   const currentCredits = await getUserCredits(userId);
-  
+
   if (currentCredits < amount) {
     return false;
   }
-  
+
   const { error } = await supabase
     .from("user_credits")
-    .update({ 
+    .update({
       credits: currentCredits - amount,
       updated_at: new Date().toISOString(),
     })
     .eq("user_id", userId);
-  
+
   if (error) {
     throw new Error(`Failed to deduct credits: ${error.message}`);
   }
-  
+
   return true;
 }

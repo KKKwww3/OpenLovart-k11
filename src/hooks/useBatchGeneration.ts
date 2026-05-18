@@ -12,6 +12,7 @@ export interface BatchTask {
   result?: string;
   error?: string;
   progress: number;
+  statusMessage?: string;
 }
 
 export interface BatchGenerationOptions {
@@ -33,7 +34,9 @@ export interface UseBatchGenerationReturn {
   clearTasks: () => void;
 }
 
-async function uploadImageAndGetUrl(image: File | string | undefined): Promise<string | undefined> {
+async function uploadImageAndGetUrl(
+  image: File | string | undefined,
+): Promise<string | undefined> {
   if (!image) return undefined;
 
   if (image instanceof File) {
@@ -73,140 +76,178 @@ export function useBatchGeneration(
       ? tasks.reduce((sum, t) => sum + t.progress, 0) / tasks.length
       : 0;
 
-  const processTask = useCallback(async (
-    task: BatchTask,
-    model?: string,
-  ): Promise<BatchTask> => {
-    try {
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.id === task.id ? { ...t, status: "processing", progress: 5 } : t,
-        ),
-      );
-
-      let referenceImageUrl: string | undefined;
-      let productImageUrl: string | undefined;
-
-      if (task.referenceImage) {
+  const processTask = useCallback(
+    async (task: BatchTask, model?: string): Promise<BatchTask> => {
+      try {
         setTasks((prev) =>
           prev.map((t) =>
-            t.id === task.id ? { ...t, status: "processing", progress: 8 } : t,
+            t.id === task.id ? { ...t, status: "processing", progress: 5 } : t,
           ),
         );
-        referenceImageUrl = await uploadImageAndGetUrl(task.referenceImage);
-      }
 
-      if (task.productImage) {
+        let referenceImageUrl: string | undefined;
+        let productImageUrl: string | undefined;
+
+        if (task.referenceImage) {
+          setTasks((prev) =>
+            prev.map((t) =>
+              t.id === task.id
+                ? { ...t, status: "processing", progress: 8 }
+                : t,
+            ),
+          );
+          referenceImageUrl = await uploadImageAndGetUrl(task.referenceImage);
+        }
+
+        if (task.productImage) {
+          setTasks((prev) =>
+            prev.map((t) =>
+              t.id === task.id
+                ? { ...t, status: "processing", progress: 10 }
+                : t,
+            ),
+          );
+          productImageUrl = await uploadImageAndGetUrl(task.productImage);
+        }
+
         setTasks((prev) =>
           prev.map((t) =>
-            t.id === task.id ? { ...t, status: "processing", progress: 10 } : t,
+            t.id === task.id ? { ...t, status: "processing", progress: 15 } : t,
           ),
         );
-        productImageUrl = await uploadImageAndGetUrl(task.productImage);
-      }
 
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.id === task.id ? { ...t, status: "processing", progress: 15 } : t,
-        ),
-      );
-
-      const streamResult = await new Promise<GenerateImageResponse>((resolve, reject) => {
-        generateImageStream({
-          prompt: task.prompt,
-          referenceImage: referenceImageUrl,
-          productImage: productImageUrl,
-          model,
-        }, {
-          onProgress: (_text, accumulated) => {
-            setTasks((prev) =>
-              prev.map((t) =>
-                t.id === task.id
-                  ? { ...t, status: "processing", progress: Math.min(90, 15 + Math.floor(accumulated.length / 10)) }
-                  : t,
-              ),
+        const streamResult = await new Promise<GenerateImageResponse>(
+          (resolve, reject) => {
+            generateImageStream(
+              {
+                prompt: task.prompt,
+                referenceImage: referenceImageUrl,
+                productImage: productImageUrl,
+                model,
+              },
+              {
+                onStatus: (stage, message) => {
+                  setTasks((prev) =>
+                    prev.map((t) =>
+                      t.id === task.id ? { ...t, statusMessage: message } : t,
+                    ),
+                  );
+                },
+                onProgress: (_text, accumulated) => {
+                  setTasks((prev) =>
+                    prev.map((t) =>
+                      t.id === task.id
+                        ? {
+                            ...t,
+                            status: "processing",
+                            progress: Math.min(
+                              90,
+                              15 + Math.floor(accumulated.length / 10),
+                            ),
+                          }
+                        : t,
+                    ),
+                  );
+                },
+                onComplete: (result) => {
+                  resolve(result);
+                },
+                onError: (error) => {
+                  reject(new Error(error));
+                },
+              },
+              supabase,
             );
           },
-          onComplete: (result) => {
-            resolve(result);
-          },
-          onError: (error) => {
-            reject(new Error(error));
-          },
-        }, supabase);
-      });
+        );
 
-      if (!streamResult.imageUrl) {
-        throw new Error(streamResult.textResponse || "未生成图片");
-      }
-
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.id === task.id
-            ? { ...t, status: "completed", result: streamResult.imageUrl, progress: 100 }
-            : t,
-        ),
-      );
-
-      return { ...task, status: "completed", result: streamResult.imageUrl, progress: 100 };
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "生成失败";
-      setTasks((prev) =>
-        prev.map((t) =>
-          t.id === task.id
-            ? { ...t, status: "failed", error: errorMessage, progress: 0 }
-            : t,
-        ),
-      );
-      return { ...task, status: "failed", error: errorMessage, progress: 0 };
-    }
-  }, [supabase]);
-
-  const startBatch = useCallback(async (options: BatchGenerationOptions) => {
-    cancelRef.current = false;
-    currentOptionsRef.current = options;
-    setIsProcessing(true);
-
-    const initialTasks: BatchTask[] = options.tasks.map((t) => ({
-      ...t,
-      status: "pending" as const,
-      progress: 0,
-    }));
-
-    setTasks(initialTasks);
-
-    const concurrency = options.concurrency || 2;
-    const results: BatchTask[] = [];
-    const queue = [...initialTasks];
-
-    const processQueue = async () => {
-      while (queue.length > 0 && !cancelRef.current) {
-        const task = queue.shift();
-        if (!task) break;
-
-        const result = await processTask(task, options.model);
-        results.push(result);
-
-        if (result.status === "completed" && options.onTaskComplete) {
-          options.onTaskComplete(result.id, result.result!);
-        } else if (result.status === "failed" && options.onTaskError) {
-          options.onTaskError(result.id, result.error!);
+        if (!streamResult.imageUrl) {
+          throw new Error(streamResult.textResponse || "未生成图片");
         }
+
+        setTasks((prev) =>
+          prev.map((t) =>
+            t.id === task.id
+              ? {
+                  ...t,
+                  status: "completed",
+                  result: streamResult.imageUrl,
+                  progress: 100,
+                }
+              : t,
+          ),
+        );
+
+        return {
+          ...task,
+          status: "completed",
+          result: streamResult.imageUrl,
+          progress: 100,
+        };
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : "生成失败";
+        setTasks((prev) =>
+          prev.map((t) =>
+            t.id === task.id
+              ? { ...t, status: "failed", error: errorMessage, progress: 0 }
+              : t,
+          ),
+        );
+        return { ...task, status: "failed", error: errorMessage, progress: 0 };
       }
-    };
+    },
+    [supabase],
+  );
 
-    const workers = Array(Math.min(concurrency, initialTasks.length))
-      .fill(null)
-      .map(() => processQueue());
+  const startBatch = useCallback(
+    async (options: BatchGenerationOptions) => {
+      cancelRef.current = false;
+      currentOptionsRef.current = options;
+      setIsProcessing(true);
 
-    await Promise.all(workers);
+      const initialTasks: BatchTask[] = options.tasks.map((t) => ({
+        ...t,
+        status: "pending" as const,
+        progress: 0,
+      }));
 
-    setIsProcessing(false);
+      setTasks(initialTasks);
 
-    if (!cancelRef.current && options.onAllComplete) {
-      options.onAllComplete(results);
-    }
-  }, [processTask]);
+      const concurrency = options.concurrency || 2;
+      const results: BatchTask[] = [];
+      const queue = [...initialTasks];
+
+      const processQueue = async () => {
+        while (queue.length > 0 && !cancelRef.current) {
+          const task = queue.shift();
+          if (!task) break;
+
+          const result = await processTask(task, options.model);
+          results.push(result);
+
+          if (result.status === "completed" && options.onTaskComplete) {
+            options.onTaskComplete(result.id, result.result!);
+          } else if (result.status === "failed" && options.onTaskError) {
+            options.onTaskError(result.id, result.error!);
+          }
+        }
+      };
+
+      const workers = Array(Math.min(concurrency, initialTasks.length))
+        .fill(null)
+        .map(() => processQueue());
+
+      await Promise.all(workers);
+
+      setIsProcessing(false);
+
+      if (!cancelRef.current && options.onAllComplete) {
+        options.onAllComplete(results);
+      }
+    },
+    [processTask],
+  );
 
   const cancelBatch = useCallback(() => {
     cancelRef.current = true;
@@ -227,7 +268,9 @@ export function useBatchGeneration(
 
       setTasks((prev) =>
         prev.map((t) =>
-          t.id === taskId ? { ...t, status: "pending", error: undefined, progress: 0 } : t,
+          t.id === taskId
+            ? { ...t, status: "pending", error: undefined, progress: 0 }
+            : t,
         ),
       );
 

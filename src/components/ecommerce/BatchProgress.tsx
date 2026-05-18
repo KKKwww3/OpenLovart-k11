@@ -81,9 +81,16 @@ export function BatchProgress({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+              <div className="w-full h-full bg-gray-100 flex flex-col items-center justify-center gap-1">
                 {task.status === "processing" && (
-                  <Loader2 size={16} className="text-blue-500 animate-spin" />
+                  <>
+                    <Loader2 size={16} className="text-blue-500 animate-spin" />
+                    {task.statusMessage && (
+                      <span className="text-[8px] text-gray-500 text-center px-1 line-clamp-2">
+                        {task.statusMessage}
+                      </span>
+                    )}
+                  </>
                 )}
                 {task.status === "pending" && (
                   <div className="w-3 h-3 rounded-full bg-gray-300" />

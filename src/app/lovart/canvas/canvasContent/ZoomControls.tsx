@@ -30,8 +30,12 @@ export function ZoomControls({
       }
     };
 
-    window.addEventListener("wheel", handleWheel, { passive: false, capture: true });
-    return () => window.removeEventListener("wheel", handleWheel, { capture: true });
+    window.addEventListener("wheel", handleWheel, {
+      passive: false,
+      capture: true,
+    });
+    return () =>
+      window.removeEventListener("wheel", handleWheel, { capture: true });
   }, [onZoomIn, onZoomOut]);
 
   return (
