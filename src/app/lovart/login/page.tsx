@@ -10,7 +10,7 @@ export default function LoginPage() {
   const supabase = useSupabase();
 
   const handleSuccess = useCallback(() => {
-    router.push("/lovart/canvas");
+    router.push("/lovart");
   }, [router]);
 
   if (!supabase) {

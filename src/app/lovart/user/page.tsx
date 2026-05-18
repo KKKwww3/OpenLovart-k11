@@ -1,13 +1,22 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Coins, Calendar, Bell } from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
+import { Coins, Calendar, LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useSupabase, INTERNAL_USER_ID } from "@/hooks/useSupabase";
 
 export default function UserPage() {
   const supabase = useSupabase();
+  const router = useRouter();
   const [credits, setCredits] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const handleLogout = useCallback(async () => {
+    if (!supabase) return;
+    await supabase.auth.signOut();
+    router.push("/lovart/login");
+    router.refresh();
+  }, [supabase, router]);
 
   useEffect(() => {
     async function loadUserCredits() {
@@ -70,9 +79,12 @@ export default function UserPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative">
-                <Bell size={18} className="text-gray-600" />
-                <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <LogOut size={16} />
+                <span>登出</span>
               </button>
 
               {credits !== null && (

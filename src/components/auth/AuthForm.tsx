@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Mail, Lock, Loader2, LogIn, UserPlus } from "lucide-react";
+import { Mail, Lock, Loader2, LogIn, UserPlus, CheckCircle2 } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export interface AuthFormProps {
@@ -36,8 +36,8 @@ export function AuthForm({ supabase, onSuccess, mode = "login" }: AuthFormProps)
         if (data.user && !data.session) {
           setMessage("注册成功！请检查您的邮箱以确认账户。");
         } else {
-          setMessage("注册成功！");
-          onSuccess?.();
+          setMessage("注册成功！正在跳转...");
+          setTimeout(() => onSuccess?.(), 800);
         }
       } else {
         const { data, error: signInError } =
@@ -49,7 +49,8 @@ export function AuthForm({ supabase, onSuccess, mode = "login" }: AuthFormProps)
         if (signInError) throw signInError;
 
         if (data.session) {
-          onSuccess?.();
+          setMessage("登录成功！正在跳转...");
+          setTimeout(() => onSuccess?.(), 800);
         }
       }
     } catch (err) {
@@ -131,7 +132,8 @@ export function AuthForm({ supabase, onSuccess, mode = "login" }: AuthFormProps)
           )}
 
           {message && (
-            <div className="p-3 bg-green-50 border border-green-100 rounded-lg">
+            <div className="p-3 bg-green-50 border border-green-100 rounded-lg flex items-center gap-2">
+              <CheckCircle2 size={16} className="text-green-500 shrink-0" />
               <p className="text-sm text-green-600">{message}</p>
             </div>
           )}
