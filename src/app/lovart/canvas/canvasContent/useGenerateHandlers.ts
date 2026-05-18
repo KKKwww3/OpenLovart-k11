@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { CanvasElement } from "@/components/lovart/CanvasArea";
 import { generateDesign, generateImage } from "@/lib/api";
+import { uploadImageToImgbbBrowser } from "@/lib/imgbb-browser";
 import { useSupabase } from "@/hooks/useSupabase";
 
 interface UseGenerateHandlersParams {
@@ -123,10 +124,18 @@ export function useGenerateHandlers(params: UseGenerateHandlersParams) {
   ) => {
     setIsGenerating(true);
     try {
+      let referenceImageUrl = referenceImage;
+      if (referenceImage && referenceImage.startsWith("data:")) {
+        const result = await uploadImageToImgbbBrowser(referenceImage);
+        if (!result) {
+          throw new Error("参考图片上传失败，请检查网络后重试");
+        }
+        referenceImageUrl = result.url;
+      }
+
       const data = await generateImage({
         prompt,
-        referenceImage,
-        mimeType: referenceImage ? "image/jpeg" : undefined,
+        referenceImage: referenceImageUrl,
         model,
       }, supabase || undefined, {
         onProgress: (text) => {
@@ -141,7 +150,7 @@ export function useGenerateHandlers(params: UseGenerateHandlersParams) {
         (id) => currentElements.find((el) => el.id === id)?.type === "image-generator",
       );
 
-      if (data.imageData) {
+      if (data.imageUrl) {
         if (generatorElementId) {
           setElements((prev) =>
             prev.map((el) => {
@@ -149,7 +158,7 @@ export function useGenerateHandlers(params: UseGenerateHandlersParams) {
                 return {
                   ...el,
                   type: "image",
-                  content: data.imageData,
+                  content: data.imageUrl,
                 };
               }
               return el;
@@ -163,7 +172,7 @@ export function useGenerateHandlers(params: UseGenerateHandlersParams) {
             y: 300 - pan.y,
             width: 400,
             height: 400,
-            content: data.imageData,
+            content: data.imageUrl,
           };
           setElements((prev) => [...prev, newElement]);
           setSelectedIds([newElement.id]);

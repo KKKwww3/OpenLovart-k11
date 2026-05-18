@@ -18,9 +18,8 @@ export interface ProductReplaceModuleProps {
 
 export function ProductReplaceModule({ onAddToCanvas, supabase }: ProductReplaceModuleProps) {
   const [sceneFiles, setSceneFiles] = useState<UploadedFile[]>([]);
-  const [sceneBase64, setSceneBase64] = useState<string | null>(null);
   const [productFiles, setProductFiles] = useState<UploadedFile[]>([]);
-  const productBase64MapRef = useRef<Map<string, string>>(new Map());
+  const productFileMapRef = useRef<Map<string, File>>(new Map());
   const [currentPrompt, setCurrentPrompt] = useState(PRODUCT_REPLACE_PROMPT);
   const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL_OPTIONS[0].value);
   const [results, setResults] = useState<ResultItem[]>([]);
@@ -34,32 +33,36 @@ export function ProductReplaceModule({ onAddToCanvas, supabase }: ProductReplace
     clearTasks,
   } = useBatchGeneration(supabase);
 
-  const handleSceneBase64Ready = useCallback(
-    (newFiles: { id: string; base64: string }[]) => {
-      if (newFiles.length > 0) {
-        setSceneBase64(newFiles[0].base64);
-      }
+  const handleSceneChange = useCallback(
+    (files: UploadedFile[]) => {
+      setSceneFiles(files);
     },
     [],
   );
 
-  const handleProductBase64Ready = useCallback(
-    (newFiles: { id: string; base64: string }[]) => {
-      newFiles.forEach((f) => {
-        productBase64MapRef.current.set(f.id, f.base64);
+  const handleProductChange = useCallback(
+    (files: UploadedFile[]) => {
+      files.forEach((f) => {
+        if (f.file) {
+          productFileMapRef.current.set(f.id, f.file);
+        }
       });
+      setProductFiles(files);
     },
     [],
   );
 
   const handleGenerate = useCallback(async () => {
-    if (productFiles.length === 0 || !sceneBase64) return;
+    if (productFiles.length === 0 || sceneFiles.length === 0) return;
+
+    const sceneFile = sceneFiles[0]?.file;
+    if (!sceneFile) return;
 
     const tasksToCreate = productFiles.map((pf) => ({
       id: uuidv4(),
       prompt: currentPrompt,
-      referenceImage: sceneBase64,
-      productImage: productBase64MapRef.current.get(pf.id) || "",
+      referenceImage: sceneFile,
+      productImage: productFileMapRef.current.get(pf.id),
     }));
 
     setResults([]);
@@ -76,7 +79,7 @@ export function ProductReplaceModule({ onAddToCanvas, supabase }: ProductReplace
         ]);
       },
     });
-  }, [productFiles, sceneBase64, currentPrompt, selectedModel, startBatch, clearTasks]);
+  }, [productFiles, sceneFiles, currentPrompt, selectedModel, startBatch, clearTasks]);
 
   const handleAddToCanvas = useCallback(
     (result: ResultItem) => {
@@ -93,6 +96,8 @@ export function ProductReplaceModule({ onAddToCanvas, supabase }: ProductReplace
     });
   }, [results, onAddToCanvas]);
 
+  const hasSceneFile = sceneFiles.length > 0 && sceneFiles[0]?.file;
+
   return (
     <div className="space-y-4">
       <ProductReplacePrompt onPromptChange={setCurrentPrompt} />
@@ -108,8 +113,7 @@ export function ProductReplaceModule({ onAddToCanvas, supabase }: ProductReplace
           multiple={false}
           maxFiles={1}
           value={sceneFiles}
-          onChange={setSceneFiles}
-          onBase64Ready={handleSceneBase64Ready}
+          onChange={handleSceneChange}
           placeholder="上传场景背景图（1张）"
         />
       </div>
@@ -120,8 +124,7 @@ export function ProductReplaceModule({ onAddToCanvas, supabase }: ProductReplace
           multiple
           maxFiles={10}
           value={productFiles}
-          onChange={setProductFiles}
-          onBase64Ready={handleProductBase64Ready}
+          onChange={handleProductChange}
           placeholder="上传地毯产品图（可批量，每个产品单独生成）"
         />
       </div>
@@ -145,9 +148,9 @@ export function ProductReplaceModule({ onAddToCanvas, supabase }: ProductReplace
 
       <button
         onClick={handleGenerate}
-        disabled={productFiles.length === 0 || !sceneBase64 || isProcessing}
+        disabled={productFiles.length === 0 || !hasSceneFile || isProcessing}
         className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all ${
-          productFiles.length > 0 && sceneBase64 && !isProcessing
+          productFiles.length > 0 && hasSceneFile && !isProcessing
             ? "bg-gray-900 text-white hover:bg-gray-800"
             : "bg-gray-200 text-gray-400 cursor-not-allowed"
         }`}

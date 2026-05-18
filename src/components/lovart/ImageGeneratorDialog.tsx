@@ -10,6 +10,7 @@ import {
   Zap,
 } from "lucide-react";
 import { generateImage } from "@/lib/api";
+import { uploadImageToImgbbBrowser } from "@/lib/imgbb-browser";
 
 interface ImageGeneratorDialogProps {
   isOpen: boolean;
@@ -62,24 +63,25 @@ export function ImageGeneratorDialog({
     setProgressText("");
 
     try {
-      let referenceDataBase64 = null;
+      let referenceImageUrl: string | undefined = undefined;
       if (referenceImage) {
-        referenceDataBase64 = await new Promise<string>((resolve, reject) => {
+        const referenceDataBase64 = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
           reader.onerror = reject;
           reader.readAsDataURL(referenceImage);
         });
-        // Extract the base64 part
-        if (referenceDataBase64 && referenceDataBase64.includes(",")) {
-          referenceDataBase64 = referenceDataBase64.split(",")[1];
+
+        const result = await uploadImageToImgbbBrowser(referenceDataBase64);
+        if (!result) {
+          throw new Error("参考图片上传失败，请检查网络后重试");
         }
+        referenceImageUrl = result.url;
       }
 
       const data = await generateImage({
         prompt,
-        referenceImage: referenceDataBase64 ?? undefined,
-        mimeType: referenceImage?.type,
+        referenceImage: referenceImageUrl,
         model,
       }, undefined, {
         onProgress: (text) => {
@@ -89,7 +91,7 @@ export function ImageGeneratorDialog({
         },
       });
 
-      setPreviewImage(data.imageData);
+      setPreviewImage(data.imageUrl);
     } catch (err) {
       console.error("Generation error:", err);
       setError(err instanceof Error ? err.message : "生成图像时出错");

@@ -51,9 +51,8 @@ export async function POST(request: NextRequest) {
       headers,
       body: JSON.stringify({
         prompt,
-        referenceImage,
-        productImage,
-        mimeType,
+        referenceImage: referenceImage || null,
+        productImage: productImage || null,
         model,
       }),
     });

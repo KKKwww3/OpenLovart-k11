@@ -5,8 +5,8 @@ export interface GenerateDesignResponse {
 }
 
 export interface GenerateImageResponse {
-  imageData: string;
-  imageUrl?: string;
+  imageUrl: string;
+  imageData?: string;
   textResponse: string;
 }
 
@@ -176,8 +176,8 @@ export async function generateImage(
                   break;
                 case "complete":
                   resolve({
-                    imageData: payload.imageData || "",
-                    imageUrl: payload.imageUrl || undefined,
+                    imageUrl: payload.imageUrl || "",
+                    imageData: payload.imageData || undefined,
                     textResponse: payload.textResponse || "",
                   });
                   return;
@@ -296,7 +296,8 @@ export async function generateImageStream(
               break;
             case "complete":
               callbacks.onComplete?.({
-                imageData: payload.imageData || "",
+                imageUrl: payload.imageUrl || "",
+                imageData: payload.imageData || undefined,
                 textResponse: payload.textResponse || "",
               });
               return;

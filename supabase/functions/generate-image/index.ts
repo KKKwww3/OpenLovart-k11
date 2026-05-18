@@ -72,7 +72,6 @@ Deno.serve(async (req) => {
       prompt,
       referenceImage,
       productImage,
-      mimeType,
       model,
     } = await req.json();
 
@@ -112,36 +111,19 @@ Deno.serve(async (req) => {
 
     const addImage = (
       content: { type: string; text?: string; image_url?: { url: string } }[],
-      imageData: string,
-      defaultMimeType: string,
+      imageUrl: string,
     ) => {
-      let clean = imageData;
-      let mime = defaultMimeType;
-
-      if (imageData.includes("base64,")) {
-        const m = imageData.match(
-          /^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/,
-        );
-        if (m) {
-          mime = m[1];
-          clean = m[2];
-        } else {
-          const p = imageData.split("base64,");
-          if (p.length > 1) clean = p[1];
-        }
-      }
-
       content.push({
         type: "image_url",
-        image_url: { url: `data:${mime};base64,${clean}` },
+        image_url: { url: imageUrl },
       });
     };
 
     if (referenceImage) {
-      addImage(userContent, referenceImage, mimeType || "image/jpeg");
+      addImage(userContent, referenceImage);
     }
     if (productImage) {
-      addImage(userContent, productImage, "image/jpeg");
+      addImage(userContent, productImage);
     }
 
     const messages = [{ role: "user", content: userContent }];
@@ -272,7 +254,6 @@ Deno.serve(async (req) => {
           }));
         } else {
           writeSse("complete", JSON.stringify({
-            imageData: imageData || "",
             imageUrl: imageUrl || "",
             textResponse: textAccumulator.replace(/\n+/g, "\n").trim(),
           }));

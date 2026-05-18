@@ -1,13 +1,14 @@
 import { useState, useCallback, useRef } from "react";
 import { generateImageStream, GenerateImageResponse } from "@/lib/api";
+import { uploadImageToImgbbBrowser } from "@/lib/imgbb-browser";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export interface BatchTask {
   id: string;
   status: "pending" | "processing" | "completed" | "failed";
   prompt: string;
-  referenceImage?: string;
-  productImage?: string;
+  referenceImage?: File | string;
+  productImage?: File | string;
   result?: string;
   error?: string;
   progress: number;
@@ -32,6 +33,33 @@ export interface UseBatchGenerationReturn {
   clearTasks: () => void;
 }
 
+async function uploadImageAndGetUrl(image: File | string | undefined): Promise<string | undefined> {
+  if (!image) return undefined;
+
+  if (image instanceof File) {
+    const result = await uploadImageToImgbbBrowser(image);
+    if (!result) {
+      throw new Error("图片上传失败，请检查网络后重试");
+    }
+    return result.url;
+  }
+
+  if (typeof image === "string") {
+    if (image.startsWith("http://") || image.startsWith("https://")) {
+      return image;
+    }
+    if (image.startsWith("data:")) {
+      const result = await uploadImageToImgbbBrowser(image);
+      if (!result) {
+        throw new Error("图片上传失败，请检查网络后重试");
+      }
+      return result.url;
+    }
+  }
+
+  return undefined;
+}
+
 export function useBatchGeneration(
   supabase?: SupabaseClient,
 ): UseBatchGenerationReturn {
@@ -52,23 +80,49 @@ export function useBatchGeneration(
     try {
       setTasks((prev) =>
         prev.map((t) =>
-          t.id === task.id ? { ...t, status: "processing", progress: 10 } : t,
+          t.id === task.id ? { ...t, status: "processing", progress: 5 } : t,
+        ),
+      );
+
+      let referenceImageUrl: string | undefined;
+      let productImageUrl: string | undefined;
+
+      if (task.referenceImage) {
+        setTasks((prev) =>
+          prev.map((t) =>
+            t.id === task.id ? { ...t, status: "processing", progress: 8 } : t,
+          ),
+        );
+        referenceImageUrl = await uploadImageAndGetUrl(task.referenceImage);
+      }
+
+      if (task.productImage) {
+        setTasks((prev) =>
+          prev.map((t) =>
+            t.id === task.id ? { ...t, status: "processing", progress: 10 } : t,
+          ),
+        );
+        productImageUrl = await uploadImageAndGetUrl(task.productImage);
+      }
+
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === task.id ? { ...t, status: "processing", progress: 15 } : t,
         ),
       );
 
       const streamResult = await new Promise<GenerateImageResponse>((resolve, reject) => {
         generateImageStream({
           prompt: task.prompt,
-          referenceImage: task.referenceImage,
-          productImage: task.productImage,
-          mimeType: task.referenceImage ? "image/jpeg" : undefined,
+          referenceImage: referenceImageUrl,
+          productImage: productImageUrl,
           model,
         }, {
           onProgress: (_text, accumulated) => {
             setTasks((prev) =>
               prev.map((t) =>
                 t.id === task.id
-                  ? { ...t, status: "processing", progress: Math.min(90, 10 + Math.floor(accumulated.length / 10)) }
+                  ? { ...t, status: "processing", progress: Math.min(90, 15 + Math.floor(accumulated.length / 10)) }
                   : t,
               ),
             );
@@ -82,19 +136,19 @@ export function useBatchGeneration(
         }, supabase);
       });
 
-      if (!streamResult.imageData) {
+      if (!streamResult.imageUrl) {
         throw new Error(streamResult.textResponse || "未生成图片");
       }
 
       setTasks((prev) =>
         prev.map((t) =>
           t.id === task.id
-            ? { ...t, status: "completed", result: streamResult.imageData, progress: 100 }
+            ? { ...t, status: "completed", result: streamResult.imageUrl, progress: 100 }
             : t,
         ),
       );
 
-      return { ...task, status: "completed", result: streamResult.imageData, progress: 100 };
+      return { ...task, status: "completed", result: streamResult.imageUrl, progress: 100 };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "生成失败";
       setTasks((prev) =>
