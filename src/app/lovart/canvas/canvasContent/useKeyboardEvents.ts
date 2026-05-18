@@ -1,16 +1,21 @@
 import { useEffect, useRef } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { CanvasElement } from "@/components/lovart/CanvasArea";
+import { findNonOverlappingSpot } from "./utils";
 
 interface UseKeyboardEventsParams {
+  elements: CanvasElement[];
   selectedIds: string[];
   setElements: (elements: CanvasElement[] | ((prev: CanvasElement[]) => CanvasElement[])) => void;
   setSelectedIds: (ids: string[] | ((prev: string[]) => string[])) => void;
   setPan: (pan: { x: number; y: number } | ((prev: { x: number; y: number }) => { x: number; y: number })) => void;
-  canvasContainerRef: React.MutableRefObject<HTMLDivElement | null>;
+  onZoomToFit?: () => void;
 }
 
 export function useKeyboardEvents(params: UseKeyboardEventsParams) {
-  const { selectedIds, setElements, setSelectedIds, setPan, canvasContainerRef } = params;
+  const { elements, selectedIds, setElements, setSelectedIds, setPan, onZoomToFit } = params;
+
+  const clipboardRef = useRef<CanvasElement[]>([]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -21,19 +26,66 @@ export function useKeyboardEvents(params: UseKeyboardEventsParams) {
         return;
       }
 
-      if (
-        (e.key === "Delete" || e.key === "Backspace") &&
-        selectedIds.length > 0
-      ) {
+      if ((e.key === "Delete" || e.key === "Backspace") && selectedIds.length > 0) {
         setElements((prev) =>
           prev.filter((el) => !selectedIds.includes(el.id)),
         );
         setSelectedIds([]);
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key === "c") {
+        e.preventDefault();
+        const copied = elements.filter((el) => selectedIds.includes(el.id));
+        clipboardRef.current = copied;
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key === "v") {
+        e.preventDefault();
+        if (clipboardRef.current.length === 0) return;
+
+        const currentElements = elements;
+        const newElements = clipboardRef.current.map((el) => {
+          const itemW = el.width || 200;
+          const itemH = el.height || 200;
+          const baseX = el.x;
+          const baseY = el.y;
+          const { x, y } = findNonOverlappingSpot(
+            currentElements,
+            itemW,
+            itemH,
+            baseX + 30,
+            baseY + 30,
+          );
+          return {
+            ...el,
+            id: uuidv4(),
+            x,
+            y,
+          } as CanvasElement;
+        });
+        setElements((prev) => [...prev, ...newElements]);
+        setSelectedIds(newElements.map((el) => el.id));
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+        e.preventDefault();
+        setSelectedIds(elements.map((el) => el.id));
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key === "0") {
+        e.preventDefault();
+        onZoomToFit?.();
+        return;
       }
     };
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedIds, setElements, setSelectedIds]);
+  }, [selectedIds, setElements, setSelectedIds, elements, onZoomToFit]);
 
   const spaceRef = useRef(false);
   const panStartRef = useRef({ x: 0, y: 0 });
@@ -43,21 +95,33 @@ export function useKeyboardEvents(params: UseKeyboardEventsParams) {
       if (e.code === "Space" && !e.repeat) {
         spaceRef.current = true;
         e.preventDefault();
+        document.body.style.cursor = "grab";
       }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.code === "Space") {
         spaceRef.current = false;
+        document.body.style.cursor = "";
       }
     };
 
-    const container = canvasContainerRef.current;
-    if (!container) return;
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
 
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+      document.body.style.cursor = "";
+    };
+  }, []);
+
+  useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
       if (!spaceRef.current) return;
       e.preventDefault();
+      e.stopPropagation();
+      document.body.style.cursor = "grabbing";
       panStartRef.current = { x: e.clientX, y: e.clientY };
 
       const handleMouseMove = (moveE: MouseEvent) => {
@@ -71,6 +135,7 @@ export function useKeyboardEvents(params: UseKeyboardEventsParams) {
       };
 
       const handleMouseUp = () => {
+        document.body.style.cursor = "grab";
         document.removeEventListener("mousemove", handleMouseMove);
         document.removeEventListener("mouseup", handleMouseUp);
       };
@@ -79,14 +144,10 @@ export function useKeyboardEvents(params: UseKeyboardEventsParams) {
       document.addEventListener("mouseup", handleMouseUp);
     };
 
-    container.addEventListener("mousedown", handleMouseDown);
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
+    document.addEventListener("mousedown", handleMouseDown, { capture: true });
 
     return () => {
-      container.removeEventListener("mousedown", handleMouseDown);
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
+      document.removeEventListener("mousedown", handleMouseDown, { capture: true });
     };
-  }, [canvasContainerRef, setPan]);
+  }, [setPan]);
 }

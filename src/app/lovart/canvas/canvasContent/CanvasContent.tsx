@@ -10,7 +10,6 @@ import {
   CloudOff,
   Image as ImageIcon,
   Maximize2,
-  Minimize2,
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -85,7 +84,8 @@ function CanvasContent() {
   });
 
   useKeyboardEvents({
-    selectedIds, setElements, setSelectedIds, setPan, canvasContainerRef,
+    elements, selectedIds, setElements, setSelectedIds, setPan,
+    onZoomToFit: canvasOps.handleZoomToFit,
   });
 
   useEffect(() => {
@@ -292,16 +292,9 @@ function CanvasContent() {
           <button
             onClick={canvasOps.handleZoomToFit}
             className="p-1.5 hover:bg-gray-50 rounded text-gray-500"
-            title="适应屏幕"
+            title="适应屏幕 (Ctrl+0)"
           >
             <Maximize2 size={16} />
-          </button>
-          <button
-            onClick={canvasOps.handleResetView}
-            className="p-1.5 hover:bg-gray-50 rounded text-gray-500"
-            title="重置视图"
-          >
-            <Minimize2 size={16} />
           </button>
         </div>
       </div>

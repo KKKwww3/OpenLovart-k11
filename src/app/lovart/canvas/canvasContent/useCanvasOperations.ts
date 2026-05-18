@@ -54,28 +54,12 @@ export function useCanvasOperations(params: UseCanvasOperationsParams) {
     });
   };
 
-  const handleResetView = () => {
-    setPan({ x: 0, y: 0 });
-    setScale(1);
-  };
-
-  const handleMinimize = () => {
-    setScale(0.1);
-    const container = canvasContainerRef.current;
-    if (container) {
-      setPan({
-        x: container.clientWidth / 2 - (container.clientWidth * 5) / 2,
-        y: container.clientHeight / 2 - (container.clientHeight * 5) / 2,
-      });
-    }
-  };
-
   useEffect(() => {
     const container = canvasContainerRef.current;
     if (!container) return;
 
     const handleWheel = (e: WheelEvent) => {
-      if (!e.altKey) return;
+      if (!e.ctrlKey) return;
       e.preventDefault();
 
       const rect = container.getBoundingClientRect();
@@ -107,7 +91,5 @@ export function useCanvasOperations(params: UseCanvasOperationsParams) {
     handleZoomIn,
     handleZoomOut,
     handleZoomToFit,
-    handleResetView,
-    handleMinimize,
   };
 }
