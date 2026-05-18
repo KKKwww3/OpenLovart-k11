@@ -59,8 +59,8 @@ export function useCanvasOperations(params: UseCanvasOperationsParams) {
     if (!container) return;
 
     const handleWheel = (e: WheelEvent) => {
-      if (!e.ctrlKey) return;
       e.preventDefault();
+      if (!e.ctrlKey) return;
 
       const rect = container.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;

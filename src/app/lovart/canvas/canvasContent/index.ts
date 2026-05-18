@@ -1,4 +1,5 @@
 export { default as CanvasContent } from './CanvasContent';
+export { ZoomControls } from './ZoomControls';
 export { useCanvasState } from './useCanvasState';
 export { useProjectSave } from './useProjectSave';
 export { useElementHandlers } from './useElementHandlers';

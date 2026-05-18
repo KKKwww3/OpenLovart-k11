@@ -2,14 +2,11 @@
 
 import React, { useEffect } from "react";
 import {
-  Plus,
-  Minus,
   ChevronDown,
   Sparkles,
   Cloud,
   CloudOff,
   Image as ImageIcon,
-  Maximize2,
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -25,8 +22,10 @@ import { useCanvasState } from "./useCanvasState";
 import { useProjectSave } from "./useProjectSave";
 import { useElementHandlers } from "./useElementHandlers";
 import { useGenerateHandlers } from "./useGenerateHandlers";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { useCanvasOperations } from "./useCanvasOperations";
 import { useKeyboardEvents } from "./useKeyboardEvents";
+import { ZoomControls } from "./ZoomControls";
 
 function CanvasContent() {
   const supabase = useSupabase();
@@ -208,6 +207,7 @@ function CanvasContent() {
       )}
 
       <div className="absolute inset-0" ref={canvasContainerRef}>
+          <TooltipProvider delayDuration={400}>
         <CanvasArea
           scale={scale}
           pan={pan}
@@ -270,33 +270,13 @@ function CanvasContent() {
           return null;
         })()}
 
-        <div className="absolute bottom-4 left-4 flex items-center bg-white rounded-lg shadow-sm border border-gray-100 p-1 z-50 gap-0.5">
-          <button
-            onClick={canvasOps.handleZoomOut}
-            className="p-1.5 hover:bg-gray-50 rounded text-gray-500"
-            title="缩小"
-          >
-            <Minus size={16} />
-          </button>
-          <span className="px-2 text-xs font-medium text-gray-600 min-w-[3rem] text-center">
-            {Math.round(scale * 100)}%
-          </span>
-          <button
-            onClick={canvasOps.handleZoomIn}
-            className="p-1.5 hover:bg-gray-50 rounded text-gray-500"
-            title="放大"
-          >
-            <Plus size={16} />
-          </button>
-          <div className="w-px h-6 bg-gray-200 mx-0.5" />
-          <button
-            onClick={canvasOps.handleZoomToFit}
-            className="p-1.5 hover:bg-gray-50 rounded text-gray-500"
-            title="适应屏幕 (Ctrl+0)"
-          >
-            <Maximize2 size={16} />
-          </button>
-        </div>
+        <ZoomControls
+          scale={scale}
+          onZoomIn={canvasOps.handleZoomIn}
+          onZoomOut={canvasOps.handleZoomOut}
+          onZoomToFit={canvasOps.handleZoomToFit}
+        />
+          </TooltipProvider>
       </div>
     </div>
   );
