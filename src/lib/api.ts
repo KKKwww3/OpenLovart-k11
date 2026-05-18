@@ -9,6 +9,12 @@ export interface GenerateImageResponse {
   textResponse: string;
 }
 
+export interface GenerateImageStreamCallbacks {
+  onProgress?: (text: string, accumulated: string) => void;
+  onComplete?: (result: GenerateImageResponse) => void;
+  onError?: (error: string) => void;
+}
+
 export interface GenerateVideoResponse {
   taskId: string;
   status: string;
@@ -101,6 +107,111 @@ export async function generateImage(
   }
 
   return data;
+}
+
+export async function generateImageStream(
+  options: {
+    prompt: string;
+    referenceImage?: string;
+    productImage?: string;
+    mimeType?: string;
+    model?: string;
+  },
+  callbacks: GenerateImageStreamCallbacks,
+  supabase?: SupabaseClient,
+): Promise<void> {
+  const accessToken = await getAccessToken(supabase);
+
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+  };
+
+  if (accessToken) {
+    headers["Authorization"] = `Bearer ${accessToken}`;
+  }
+
+  const response = await fetch("/api/generate-image", {
+    method: "POST",
+    headers,
+    body: JSON.stringify(options),
+  });
+
+  if (!response.ok) {
+    let data: Record<string, unknown>;
+    try {
+      data = await response.json();
+    } catch {
+      data = {};
+    }
+    if (response.status === 401 || data.needsAuth) {
+      callbacks.onError?.("请先登录后再使用此功能");
+      return;
+    }
+    callbacks.onError?.(String(data.details || data.error || "Failed to generate image"));
+    return;
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) {
+    callbacks.onError?.("No response body");
+    return;
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const chunks = buffer.split("\n\n");
+      buffer = chunks.pop() || "";
+
+      for (const chunk of chunks) {
+        const lines = chunk.split("\n");
+        let eventType = "";
+        let dataStr = "";
+
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            eventType = line.slice(7).trim();
+          } else if (line.startsWith("data: ")) {
+            dataStr = line.slice(6).trim();
+          }
+        }
+
+        if (!dataStr) continue;
+
+        try {
+          const payload = JSON.parse(dataStr);
+
+          switch (eventType) {
+            case "progress":
+              callbacks.onProgress?.(payload.text || "", payload.accumulated || "");
+              break;
+            case "complete":
+              callbacks.onComplete?.({
+                imageData: payload.imageData || "",
+                textResponse: payload.textResponse || "",
+              });
+              return;
+            case "error":
+              callbacks.onError?.(payload.error || payload.details || "Unknown error");
+              return;
+          }
+        } catch {
+          // skip malformed chunks
+        }
+      }
+    }
+
+    // Stream ended without complete/error event
+    callbacks.onError?.("Stream ended unexpectedly");
+  } catch (err) {
+    callbacks.onError?.(err instanceof Error ? err.message : "Stream read failed");
+  }
 }
 
 export async function generateVideo(

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from "react";
-import { generateImage, GenerateImageResponse } from "@/lib/api";
+import { generateImageStream, GenerateImageResponse } from "@/lib/api";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export interface BatchTask {
@@ -56,27 +56,45 @@ export function useBatchGeneration(
         ),
       );
 
-      const response: GenerateImageResponse = await generateImage({
-        prompt: task.prompt,
-        referenceImage: task.referenceImage,
-        productImage: task.productImage,
-        mimeType: task.referenceImage ? "image/jpeg" : undefined,
-        model,
-      }, supabase);
+      const streamResult = await new Promise<GenerateImageResponse>((resolve, reject) => {
+        generateImageStream({
+          prompt: task.prompt,
+          referenceImage: task.referenceImage,
+          productImage: task.productImage,
+          mimeType: task.referenceImage ? "image/jpeg" : undefined,
+          model,
+        }, {
+          onProgress: (_text, accumulated) => {
+            setTasks((prev) =>
+              prev.map((t) =>
+                t.id === task.id
+                  ? { ...t, status: "processing", progress: Math.min(90, 10 + Math.floor(accumulated.length / 10)) }
+                  : t,
+              ),
+            );
+          },
+          onComplete: (result) => {
+            resolve(result);
+          },
+          onError: (error) => {
+            reject(new Error(error));
+          },
+        }, supabase);
+      });
 
-      if (!response.imageData) {
-        throw new Error(response.textResponse || "未生成图片");
+      if (!streamResult.imageData) {
+        throw new Error(streamResult.textResponse || "未生成图片");
       }
 
       setTasks((prev) =>
         prev.map((t) =>
           t.id === task.id
-            ? { ...t, status: "completed", result: response.imageData, progress: 100 }
+            ? { ...t, status: "completed", result: streamResult.imageData, progress: 100 }
             : t,
         ),
       );
 
-      return { ...task, status: "completed", result: response.imageData, progress: 100 };
+      return { ...task, status: "completed", result: streamResult.imageData, progress: 100 };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "生成失败";
       setTasks((prev) =>

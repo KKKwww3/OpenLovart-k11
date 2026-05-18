@@ -61,6 +61,7 @@ function LovartCanvasContent() {
   const isInitializedRef = useRef(false);
   const elementsRef = useRef<CanvasElement[]>(elements);
   elementsRef.current = elements;
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
 
   const handleZoomIn = () => setScale((prev) => Math.min(prev + 0.1, 3));
   const handleZoomOut = () => setScale((prev) => Math.max(prev - 0.1, 0.1));
@@ -339,6 +340,40 @@ function LovartCanvasContent() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [selectedIds]);
+
+  // ALT + Mouse Wheel Zoom
+  useEffect(() => {
+    const container = canvasContainerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (!e.altKey) return;
+      e.preventDefault();
+
+      const rect = container.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      setScale((prevScale) => {
+        const zoomFactor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+        const newScale = Math.min(Math.max(prevScale * zoomFactor, 0.1), 3);
+
+        setPan((prevPan) => {
+          const worldX = (mouseX - prevPan.x) / prevScale;
+          const worldY = (mouseY - prevPan.y) / prevScale;
+          return {
+            x: mouseX - worldX * newScale,
+            y: mouseY - worldY * newScale,
+          };
+        });
+
+        return newScale;
+      });
+    };
+
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    return () => container.removeEventListener("wheel", handleWheel);
+  }, []);
 
   const handleAddImage = (file: File) => {
     const reader = new FileReader();
@@ -828,7 +863,7 @@ function LovartCanvasContent() {
       )}
 
       {/* Main Editor Area */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0" ref={canvasContainerRef}>
         <CanvasArea
           scale={scale}
           pan={pan}
