@@ -180,17 +180,16 @@ export function useProjectSave(params: UseProjectSaveParams) {
         const canvasElements = elementsResult.data;
         console.log("Canvas elements loaded:", canvasElements?.length || 0);
         if (canvasElements && canvasElements.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const loadedElements = canvasElements.map(
-            (ce: any) => ce.element_data,
+            (ce: { element_data: CanvasElement }) => ce.element_data,
           );
           const uniqueElements = Array.from(
             new Map(
-              loadedElements.map((item: { id: string }) => [item.id, item]),
+              loadedElements.map((item) => [item.id, item]),
             ).values(),
           );
           console.log("Unique elements after dedup:", uniqueElements.length);
-          setElements(uniqueElements as CanvasElement[]);
+          setElements(uniqueElements);
         } else {
           console.log("No canvas elements found for this project");
           setElements([]);

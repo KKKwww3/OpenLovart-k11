@@ -42,6 +42,8 @@ export default function LovartLayout({
 
     checkAuth();
 
+    if (!supabase) return;
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
