@@ -1,12 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Plus, Sparkles } from "lucide-react";
+import { Plus } from "lucide-react";
 import { DashboardSidebar } from "@/components/lovart/DashboardSidebar";
 import { ProjectCard } from "@/components/lovart/ProjectCard";
 import { useSupabase, INTERNAL_USER_ID } from "@/hooks/useSupabase";
 import Link from "next/link";
-import { v4 as uuidv4 } from "uuid";
 
 interface Project {
   id: string;
@@ -20,8 +19,6 @@ export default function LovartDashboard() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [credits, setCredits] = useState<number | null>(null);
-  const [inputValue, setInputValue] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -67,42 +64,6 @@ export default function LovartDashboard() {
 
     loadData();
   }, [supabase]);
-
-  const handleGenerate = async () => {
-    if (!inputValue.trim() || isGenerating) return;
-
-    if (!supabase) {
-      alert("系统初始化中，请稍后再试");
-      return;
-    }
-
-    setIsGenerating(true);
-
-    try {
-      const newProjectId = uuidv4();
-      const projectTitle = inputValue.trim().slice(0, 50) || "未命名项目";
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: projectError } = await (supabase as any)
-        .from("projects")
-        .insert({
-          id: newProjectId,
-          title: projectTitle,
-        })
-        .select()
-        .single();
-
-      if (projectError) {
-        throw new Error(`创建项目失败: ${projectError.message}`);
-      }
-
-      window.location.href = `/lovart/canvas?id=${newProjectId}&prompt=${encodeURIComponent(inputValue.trim())}`;
-    } catch (error) {
-      console.error("Generation failed:", error);
-      alert(error instanceof Error ? error.message : "生成失败，请重试");
-      setIsGenerating(false);
-    }
-  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);

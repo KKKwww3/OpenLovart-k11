@@ -22,11 +22,14 @@ Deno.serve(async (req) => {
     }
 
     const apiKey = Deno.env.get("VIDEO_API_KEY");
-    const baseUrl =
-      Deno.env.get("VIDEO_API_BASE_URL") || "https://www.clockapi.fun/v1";
+    const baseUrl = Deno.env.get("VIDEO_API_BASE_URL");
 
     if (!apiKey) {
       return createErrorResponse("VIDEO_API_KEY not configured", 500);
+    }
+
+    if (!baseUrl) {
+      return createErrorResponse("VIDEO_API_BASE_URL not configured", 500);
     }
 
     console.log("Checking video status for user:", user.id, "task:", taskId);

@@ -179,9 +179,8 @@ export function useProjectSave(params: UseProjectSaveParams) {
       if (canvasElements && canvasElements.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const loadedElements = canvasElements.map((ce: any) => ce.element_data);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const uniqueElements = Array.from(
-          new Map(loadedElements.map((item: any) => [item.id, item])).values(),
+          new Map(loadedElements.map((item: { id: string }) => [item.id, item])).values(),
         );
         console.log("Unique elements after dedup:", uniqueElements.length);
         setElements(uniqueElements as CanvasElement[]);

@@ -397,10 +397,16 @@ export function CanvasArea({
     onDragEnd?.();
   };
 
+  const handleMouseUpRef = useRef(handleMouseUp);
+
+  useEffect(() => {
+    handleMouseUpRef.current = handleMouseUp;
+  });
+
   useEffect(() => {
     const handleGlobalMouseUp = () => {
       if (isDragging || isResizing || isPanning || isDrawing || isSelecting) {
-        handleMouseUp();
+        handleMouseUpRef.current();
       }
     };
     window.addEventListener("mouseup", handleGlobalMouseUp);
@@ -411,10 +417,8 @@ export function CanvasArea({
     isPanning,
     isDrawing,
     isSelecting,
-    elements,
     selectionBox,
     currentPath,
-    handleMouseUp,
   ]);
 
   const selectedElement = elements.find((el) => selectedIds.includes(el.id)); // For context toolbar (just show first for now)

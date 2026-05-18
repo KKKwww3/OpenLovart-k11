@@ -10,7 +10,7 @@ interface UseCanvasOperationsParams {
 export function useCanvasOperations(params: UseCanvasOperationsParams) {
   const { setScale, setPan, canvasContainerRef, elements } = params;
 
-  const zoomAtPoint = (scaleChange: number, minScale: number, maxScale: number, clientX?: number, clientY?: number) => {
+  const zoomAtPoint = useCallback((scaleChange: number, minScale: number, maxScale: number, clientX?: number, clientY?: number) => {
     const rect = canvasContainerRef.current?.getBoundingClientRect();
     if (!rect) return (prev: number) => Math.min(maxScale, Math.max(minScale, prev + scaleChange));
 
@@ -25,15 +25,15 @@ export function useCanvasOperations(params: UseCanvasOperationsParams) {
       }));
       return newScale;
     };
-  };
+  }, [canvasContainerRef, setPan]);
 
   const handleZoomIn = useCallback((clientX?: number, clientY?: number) => {
     setScale(zoomAtPoint(0.1, 0.1, 3, clientX, clientY));
-  }, [setScale, setPan, canvasContainerRef]);
+  }, [setScale, zoomAtPoint]);
 
   const handleZoomOut = useCallback((clientX?: number, clientY?: number) => {
     setScale(zoomAtPoint(-0.1, 0.1, 3, clientX, clientY));
-  }, [setScale, setPan, canvasContainerRef]);
+  }, [setScale, zoomAtPoint]);
 
   const handleZoomToFit = useCallback(() => {
     if (elements.length === 0) {

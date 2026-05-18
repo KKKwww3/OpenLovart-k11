@@ -45,7 +45,7 @@ export function useBatchGeneration(
       ? tasks.reduce((sum, t) => sum + t.progress, 0) / tasks.length
       : 0;
 
-  const processTask = async (
+  const processTask = useCallback(async (
     task: BatchTask,
     model?: string,
   ): Promise<BatchTask> => {
@@ -106,7 +106,7 @@ export function useBatchGeneration(
       );
       return { ...task, status: "failed", error: errorMessage, progress: 0 };
     }
-  };
+  }, [supabase]);
 
   const startBatch = useCallback(async (options: BatchGenerationOptions) => {
     cancelRef.current = false;
@@ -124,7 +124,6 @@ export function useBatchGeneration(
     const concurrency = options.concurrency || 2;
     const results: BatchTask[] = [];
     const queue = [...initialTasks];
-    const processing: Promise<void>[] = [];
 
     const processQueue = async () => {
       while (queue.length > 0 && !cancelRef.current) {
@@ -153,7 +152,7 @@ export function useBatchGeneration(
     if (!cancelRef.current && options.onAllComplete) {
       options.onAllComplete(results);
     }
-  }, [supabase]);
+  }, [processTask]);
 
   const cancelBatch = useCallback(() => {
     cancelRef.current = true;
@@ -181,7 +180,7 @@ export function useBatchGeneration(
       const model = currentOptionsRef.current?.model;
       await processTask({ ...task, status: "pending", progress: 0 }, model);
     },
-    [tasks],
+    [tasks, processTask],
   );
 
   const clearTasks = useCallback(() => {

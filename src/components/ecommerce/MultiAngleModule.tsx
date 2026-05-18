@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { Zap, ChevronDown, RotateCcw } from "lucide-react";
+import { Zap, RotateCcw } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { UploadZone, UploadedFile } from "./UploadZone";
 import { BatchProgress } from "./BatchProgress";
@@ -39,7 +39,7 @@ export function MultiAngleModule({ onAddToCanvas, supabase }: MultiAngleModulePr
   const handleGenerate = useCallback(async () => {
     if (!fileBase64 || !productType.trim()) return;
 
-    const tasksToCreate = MULTI_ANGLE_PROMPTS.map((anglePrompt, index) => ({
+    const tasksToCreate = MULTI_ANGLE_PROMPTS.map((anglePrompt) => ({
       id: uuidv4(),
       prompt: `专业电商产品摄影，${productType}的${anglePrompt}，纯白背景，产品主体居中，专业商业摄影布光，8K高清，细节清晰可见，无阴影，适合电商主图展示`,
       referenceImage: fileBase64,

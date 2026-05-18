@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { Zap, ChevronDown, Video, Loader2 } from "lucide-react";
+import { ChevronDown, Video, Loader2 } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { UploadZone, UploadedFile } from "./UploadZone";
 import { ResultItem } from "./ResultPreview";
@@ -102,7 +102,7 @@ export function MainVideoModule({ onAddToCanvas, supabase }: MainVideoModuleProp
       setIsGenerating(false);
       setProgress(100);
     }
-  }, [files, filesBase64, duration, style, isGenerating]);
+  }, [files, filesBase64, duration, style, isGenerating, supabase]);
 
   const handleAddToCanvas = useCallback(
     (result: ResultItem) => {
