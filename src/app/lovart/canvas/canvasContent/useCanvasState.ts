@@ -13,9 +13,7 @@ export interface CanvasState {
   currentProjectId: string | null;
   saveStatus: "saved" | "saving" | "offline";
   isLoading: boolean;
-  showChat: boolean;
   showECommercePanel: boolean;
-  initialPrompt: string | undefined;
 }
 
 export interface CanvasSetters {
@@ -30,9 +28,7 @@ export interface CanvasSetters {
   setCurrentProjectId: React.Dispatch<React.SetStateAction<string | null>>;
   setSaveStatus: React.Dispatch<React.SetStateAction<"saved" | "saving" | "offline">>;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
-  setShowChat: React.Dispatch<React.SetStateAction<boolean>>;
   setShowECommercePanel: React.Dispatch<React.SetStateAction<boolean>>;
-  setInitialPrompt: React.Dispatch<React.SetStateAction<string | undefined>>;
 }
 
 export interface CanvasRefs {
@@ -57,9 +53,7 @@ export function useCanvasState(): CanvasState & CanvasSetters & CanvasRefs {
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "offline">("saved");
   const [isLoading, setIsLoading] = useState(true);
-  const [showChat, setShowChat] = useState(false);
   const [showECommercePanel, setShowECommercePanel] = useState(true);
-  const [initialPrompt, setInitialPrompt] = useState<string | undefined>(undefined);
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isInitializedRef = useRef(false);
@@ -85,9 +79,7 @@ export function useCanvasState(): CanvasState & CanvasSetters & CanvasRefs {
     currentProjectId, setCurrentProjectId,
     saveStatus, setSaveStatus,
     isLoading, setIsLoading,
-    showChat, setShowChat,
     showECommercePanel, setShowECommercePanel,
-    initialPrompt, setInitialPrompt,
     saveTimeoutRef, isInitializedRef, elementsRef,
     canvasContainerRef, isSavingRef, needsSaveRef, hasLoadedRef,
   };

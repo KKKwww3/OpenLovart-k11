@@ -113,7 +113,7 @@ export function DesignChat({ initialPrompt }: DesignChatProps) {
         {messages.length === 0 && (
           <div className="flex flex-col space-y-6">
             {/* Welcome Message */}
-            <div className="flex items-start gap-3">
+            {/* <div className="flex items-start gap-3">
               <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center flex-shrink-0">
                 <span className="text-white text-sm font-bold">L</span>
               </div>
@@ -125,10 +125,10 @@ export function DesignChat({ initialPrompt }: DesignChatProps) {
                   让我们开始今天的创作吧！
                 </p>
               </div>
-            </div>
+            </div> */}
 
             {/* Example Cards */}
-            <div className="space-y-3">
+            {/* <div className="space-y-3">
               {exampleProjects.map((example, index) => (
                 <button
                   key={index}
@@ -146,7 +146,7 @@ export function DesignChat({ initialPrompt }: DesignChatProps) {
                   <div className="text-3xl ml-4">{example.image}</div>
                 </button>
               ))}
-            </div>
+            </div> */}
 
             {/* Cut Button */}
             <button className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 transition-colors">

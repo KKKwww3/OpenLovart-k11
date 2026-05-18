@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import {
   ChevronDown,
-  Sparkles,
   Cloud,
   CloudOff,
   Image as ImageIcon,
@@ -14,7 +13,6 @@ import { FloatingToolbar } from "@/components/lovart/FloatingToolbar";
 import { CanvasArea } from "@/components/lovart/CanvasArea";
 import { ImageGeneratorPanel } from "@/components/lovart/ImageGeneratorPanel";
 import { VideoGeneratorPanel } from "@/components/lovart/VideoGeneratorPanel";
-import { AiDesignerPanel } from "@/components/lovart/AiDesignerPanel";
 import { ECommercePanel } from "@/components/ecommerce/ECommercePanel";
 import { useSupabase } from "@/hooks/useSupabase";
 
@@ -45,9 +43,7 @@ function CanvasContent() {
     currentProjectId, setCurrentProjectId,
     saveStatus, setSaveStatus,
     isLoading, setIsLoading,
-    showChat, setShowChat,
     showECommercePanel, setShowECommercePanel,
-    initialPrompt, setInitialPrompt,
     saveTimeoutRef, isInitializedRef, elementsRef,
     canvasContainerRef, isSavingRef, needsSaveRef, hasLoadedRef,
   } = state;
@@ -112,11 +108,6 @@ function CanvasContent() {
       isInitializedRef.current = true;
     }
 
-    const prompt = searchParams.get("prompt");
-    if (prompt) {
-      setInitialPrompt(prompt);
-      setShowChat(true);
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId, supabase, loadProject, searchParams]);
 
@@ -190,26 +181,8 @@ function CanvasContent() {
           >
             <ImageIcon size={18} className={showECommercePanel ? "text-blue-600" : "text-black"} />
           </button>
-          <button
-            onClick={() => setShowChat(!showChat)}
-            className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors ${showChat ? "bg-gray-100" : "hover:bg-gray-100"}`}
-            title="AI设计师"
-          >
-            <Sparkles size={18} className="text-black" />
-          </button>
         </div>
       </header>
-
-      {showChat && (
-        <div className="absolute right-4 top-20 bottom-4 w-[400px] z-40 animate-in slide-in-from-right-4 duration-300">
-          <AiDesignerPanel
-            onGenerate={generateOps.handleAiChat}
-            isGenerating={isGenerating}
-            onClose={() => setShowChat(false)}
-            initialPrompt={initialPrompt}
-          />
-        </div>
-      )}
 
       {showECommercePanel && (
         <div className="absolute right-4 top-20 bottom-4 w-[420px] z-40 animate-in slide-in-from-right-4 duration-300">
