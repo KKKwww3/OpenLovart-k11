@@ -167,6 +167,19 @@ Deno.serve(async (req) => {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 600_000);
 
+        // Send heartbeat every 15s while waiting for AI API response
+        // This prevents gateway timeout from closing the idle connection
+        const heartbeatInterval = setInterval(async () => {
+          try {
+            await writeSse("status", JSON.stringify({
+              stage: "generating",
+              message: "AI 正在生成图片，请稍候...",
+            }));
+          } catch {
+            // Stream may be closed, ignore
+          }
+        }, 15_000);
+
         let aiResponse: Response;
         try {
           aiResponse = await fetch(`${apiBaseUrl}/chat/completions`, {
@@ -185,6 +198,7 @@ Deno.serve(async (req) => {
           });
         } catch (fetchErr) {
           clearTimeout(timeoutId);
+          clearInterval(heartbeatInterval);
           const isTimeout =
             fetchErr instanceof Error && fetchErr.name === "AbortError";
           console.error(
@@ -203,6 +217,7 @@ Deno.serve(async (req) => {
           return;
         }
 
+        clearInterval(heartbeatInterval);
         clearTimeout(timeoutId);
 
         if (!aiResponse.ok) {
