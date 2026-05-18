@@ -14,38 +14,19 @@ export async function uploadImageToImgbb(
       ? imageData.split("base64,")[1]
       : imageData;
 
-    const phpSessionId = Deno.env.get("IMGBB_PHPSESSID");
-    const authToken = Deno.env.get("IMGBB_AUTH_TOKEN");
-
-    if (!phpSessionId || !authToken) {
-      console.error("[imgbb] IMGBB credentials not configured");
+    const apiKey = Deno.env.get("IMGBB_API_KEY");
+    if (!apiKey) {
+      console.error("[imgbb] IMGBB_API_KEY not configured");
       return null;
     }
 
-    const binaryString = atob(base64Str);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-
-    const file = new File([bytes], "image.jpg", { type: "image/jpeg" });
-
-    const timestamp = Date.now().toString();
     const formData = new FormData();
-    formData.append("source", file);
-    formData.append("type", "file");
-    formData.append("action", "upload");
-    formData.append("timestamp", timestamp);
-    formData.append("auth_token", authToken);
+    formData.append("image", base64Str);
 
-    const response = await fetch("https://imgbb.com/json", {
-      method: "POST",
-      headers: {
-        "Accept": "application/json",
-        "Cookie": `PHPSESSID=${phpSessionId}`,
-      },
-      body: formData,
-    });
+    const response = await fetch(
+      `https://api.imgbb.com/1/upload?expiration=600&key=${apiKey}`,
+      { method: "POST", body: formData },
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -54,17 +35,17 @@ export async function uploadImageToImgbb(
     }
 
     const result = await response.json();
-    if (result.status_code !== 200 || !result.image?.url) {
-      console.error("[imgbb] Upload failed, result:", JSON.stringify(result));
+    if (!result.success || !result.data?.url) {
+      console.error("[imgbb] Upload failed:", JSON.stringify(result));
       return null;
     }
 
     return {
-      url: result.image.url,
-      delete_url: result.image.delete_url,
-      thumbnail_url: result.image.thumb?.url,
-      medium_url: result.image.medium?.url,
-      mime: result.image.mime,
+      url: result.data.url,
+      delete_url: result.data.delete_url,
+      thumbnail_url: result.data.thumb?.url,
+      medium_url: result.data.medium?.url,
+      mime: result.data.image?.mime,
     };
   } catch (err) {
     console.error("[imgbb] Exception:", err instanceof Error ? err.message : err);
