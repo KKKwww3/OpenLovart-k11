@@ -2,7 +2,7 @@ export { ECommercePanel } from "./ECommercePanel";
 export { UploadZone } from "./UploadZone";
 export { BatchProgress } from "./BatchProgress";
 export { ResultPreview, SingleResultPreview } from "./ResultPreview";
-export { SceneReplaceModule } from "./SceneReplaceModule";
+export { ProductReplaceModule } from "./ProductReplaceModule-mod/ProductReplaceModule";
 export { MultiAngleModule } from "./MultiAngleModule";
 export { ModelGenerationModule } from "./ModelGenerationModule";
 export { CloseUpModule } from "./CloseUpModule";

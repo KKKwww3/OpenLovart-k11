@@ -22,50 +22,33 @@ export interface ParamSchema {
 
 export const PROMPT_PRESETS: PromptPreset[] = [
   {
-    id: "scene-replace",
-    name: "场景更换",
-    description: "平面图 + 对标场景图 → 合成主图，保持花色/材质/包边一致",
+    id: "product-replace",
+    name: "产品替换",
+    description: "上传场景图 + 多产品图 → 同一场景批量替换",
     icon: "Image",
     generatePrompt: (params) => {
-      const scene = params.scene as string || "现代简约客厅";
-      const style = params.style as string || "自然光影";
-      return `专业电商产品摄影，将产品置于${scene}场景中，${style}风格，保持产品原有花色、材质、包边完全一致，高清商业摄影，8K分辨率，专业布光，产品主体清晰突出，背景虚化自然，商业级后期处理`;
+      const productType = params.productType as string || "产品";
+      return `专业电商产品摄影，将${productType}自然融入指定场景中，保持场景原有布局、光影方向、墙面地面完全一致，产品与场景无缝融合成一张完整的照片，产品主体清晰突出，保持原有花色、材质、质感完全一致，透视关系与场景协调，高清商业摄影，8K分辨率，专业布光，商业级后期处理`;
     },
     defaultParams: {
-      scene: "现代简约客厅",
-      style: "自然光影",
+      productType: "产品",
     },
     paramSchema: [
       {
-        key: "scene",
-        label: "目标场景",
-        type: "select",
+        key: "productType",
+        label: "产品类型",
+        type: "text",
         required: true,
-        options: [
-          { label: "现代简约客厅", value: "现代简约客厅" },
-          { label: "北欧风格卧室", value: "北欧风格卧室" },
-          { label: "轻奢风格书房", value: "轻奢风格书房" },
-          { label: "日式禅意空间", value: "日式禅意空间" },
-          { label: "工业风办公区", value: "工业风办公区" },
-          { label: "户外自然场景", value: "户外自然场景" },
-          { label: "商业展示空间", value: "商业展示空间" },
-        ],
+        placeholder: "如：沙发、台灯、茶几等",
       },
       {
-        key: "style",
-        label: "光影风格",
-        type: "select",
+        key: "sceneImage",
+        label: "场景图片",
+        type: "image",
         required: true,
-        options: [
-          { label: "自然光影", value: "自然光影" },
-          { label: "暖色调氛围", value: "暖色调氛围" },
-          { label: "冷色调专业", value: "冷色调专业" },
-          { label: "高调明亮", value: "高调明亮" },
-          { label: "低调质感", value: "低调质感" },
-        ],
       },
       {
-        key: "referenceImage",
+        key: "productImages",
         label: "产品图片",
         type: "images",
         required: true,

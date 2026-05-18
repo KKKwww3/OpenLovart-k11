@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       accessToken = session?.access_token;
     }
 
-    const { prompt, referenceImage, mimeType, model } = await request.json();
+    const { prompt, referenceImage, productImage, mimeType, model } = await request.json();
 
     if (!prompt || typeof prompt !== "string") {
       return NextResponse.json(
@@ -29,6 +29,7 @@ export async function POST(request: NextRequest) {
       {
         prompt,
         referenceImage,
+        productImage,
         mimeType,
         model,
       },

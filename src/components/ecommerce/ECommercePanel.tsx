@@ -14,7 +14,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { SceneReplaceModule } from "./SceneReplaceModule";
+import { ProductReplaceModule } from "./ProductReplaceModule-mod/ProductReplaceModule";
 import { MultiAngleModule } from "./MultiAngleModule";
 import { ModelGenerationModule } from "./ModelGenerationModule";
 import { CloseUpModule } from "./CloseUpModule";
@@ -39,10 +39,10 @@ interface ModuleTab {
 
 const MODULE_TABS: ModuleTab[] = [
   {
-    id: "scene-replace",
-    name: "场景更换",
+    id: "product-replace",
+    name: "产品替换",
     icon: <Image size={16} />,
-    description: "产品图场景替换",
+    description: "场景批量替换产品",
   },
   {
     id: "multi-angle",
@@ -94,15 +94,15 @@ export function ECommercePanel({
   onClose,
   supabase,
 }: ECommercePanelProps) {
-  const [activeTab, setActiveTab] = useState("scene-replace");
+  const [activeTab, setActiveTab] = useState("product-replace");
   const [showModuleMenu, setShowModuleMenu] = useState(false);
 
   const currentModule = MODULE_TABS.find((m) => m.id === activeTab);
 
   const renderModule = () => {
     switch (activeTab) {
-      case "scene-replace":
-        return <SceneReplaceModule onAddToCanvas={onAddToCanvas} supabase={supabase} />;
+      case "product-replace":
+        return <ProductReplaceModule onAddToCanvas={onAddToCanvas} supabase={supabase} />;
       case "multi-angle":
         return <MultiAngleModule onAddToCanvas={onAddToCanvas} supabase={supabase} />;
       case "model-generation":

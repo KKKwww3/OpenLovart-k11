@@ -7,6 +7,7 @@ export interface BatchTask {
   status: "pending" | "processing" | "completed" | "failed";
   prompt: string;
   referenceImage?: string;
+  productImage?: string;
   result?: string;
   error?: string;
   progress: number;
@@ -58,6 +59,7 @@ export function useBatchGeneration(
       const response: GenerateImageResponse = await generateImage({
         prompt: task.prompt,
         referenceImage: task.referenceImage,
+        productImage: task.productImage,
         mimeType: task.referenceImage ? "image/jpeg" : undefined,
         model,
       }, supabase);

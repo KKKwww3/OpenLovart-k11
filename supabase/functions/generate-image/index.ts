@@ -7,12 +7,7 @@ import {
   requireAuth,
 } from "../_shared/auth.ts";
 
-const MODEL_ALIAS_MAP: Record<string, string> = {
-  "nano-banana": "google/gemini-3.1-flash-image-preview",
-  "nano-banana-pro": "openai/gpt-5.4-image-2",
-};
-
-const DEFAULT_MODEL_ALIAS = "nano-banana";
+const DEFAULT_MODEL = "google/gemini-3.1-flash-image-preview";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -25,8 +20,9 @@ Deno.serve(async (req) => {
     const {
       prompt,
       referenceImage,
+      productImage,
       mimeType,
-      model: modelAlias,
+      model,
     } = await req.json();
 
     if (!prompt || typeof prompt !== "string") {
@@ -42,16 +38,13 @@ Deno.serve(async (req) => {
       return createErrorResponse("IMAGE_API_KEY not configured", 500);
     }
 
-    const actualModel =
-      MODEL_ALIAS_MAP[modelAlias] || MODEL_ALIAS_MAP[DEFAULT_MODEL_ALIAS];
+    const actualModel = model || DEFAULT_MODEL;
 
     console.log(
       "Starting image generation for user:",
       user.id,
       "model:",
       actualModel,
-      "alias:",
-      modelAlias || DEFAULT_MODEL_ALIAS,
     );
 
     const userContent: {
@@ -60,31 +53,43 @@ Deno.serve(async (req) => {
       image_url?: { url: string };
     }[] = [{ type: "text", text: prompt }];
 
-    if (referenceImage) {
-      let cleanData = referenceImage;
-      let finalMimeType = mimeType || "image/jpeg";
+    const addImageToContent = (
+      content: { type: string; text?: string; image_url?: { url: string } }[],
+      imageData: string,
+      defaultMimeType: string,
+    ) => {
+      let cleanData = imageData;
+      let finalMimeType = defaultMimeType;
 
-      if (referenceImage.includes("base64,")) {
-        const matches = referenceImage.match(
+      if (imageData.includes("base64,")) {
+        const matches = imageData.match(
           /^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,(.+)$/,
         );
         if (matches) {
           finalMimeType = matches[1];
           cleanData = matches[2];
         } else {
-          const parts = referenceImage.split("base64,");
+          const parts = imageData.split("base64,");
           if (parts.length > 1) {
             cleanData = parts[1];
           }
         }
       }
 
-      userContent.push({
+      content.push({
         type: "image_url",
         image_url: {
           url: `data:${finalMimeType};base64,${cleanData}`,
         },
       });
+    };
+
+    if (referenceImage) {
+      addImageToContent(userContent, referenceImage, mimeType || "image/jpeg");
+    }
+
+    if (productImage) {
+      addImageToContent(userContent, productImage, "image/jpeg");
     }
 
     const messages = [{ role: "user", content: userContent }];

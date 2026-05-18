@@ -174,7 +174,13 @@ function LovartCanvasContent() {
       console.log("Save successful!");
       setSaveStatus("saved");
     } catch (error: unknown) {
-      console.error("Failed to save project:", error);
+      const err = error as Record<string, unknown>;
+      console.error("Failed to save project:", {
+        message: err?.message ?? String(error),
+        code: err?.code,
+        details: err?.details,
+        hint: err?.hint,
+      });
       setSaveStatus("offline");
     } finally {
       isSavingRef.current = false;
@@ -233,7 +239,13 @@ function LovartCanvasContent() {
           setElements([]);
         }
       } catch (error: unknown) {
-        console.error("Failed to load project:", error);
+        const err = error as Record<string, unknown>;
+        console.error("Failed to load project:", {
+          message: err?.message ?? String(error),
+          code: err?.code,
+          details: err?.details,
+          hint: err?.hint,
+        });
       } finally {
         setIsLoading(false);
       }

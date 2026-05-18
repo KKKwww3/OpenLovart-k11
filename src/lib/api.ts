@@ -69,6 +69,7 @@ export async function generateImage(
   options: {
     prompt: string;
     referenceImage?: string;
+    productImage?: string;
     mimeType?: string;
     model?: string;
   },

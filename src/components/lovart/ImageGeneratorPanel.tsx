@@ -12,7 +12,7 @@ import {
 
 type Resolution = "1K" | "2K" | "4K";
 type AspectRatio = "1:1" | "4:3" | "16:9";
-type ModelAlias = "nano-banana" | "nano-banana-pro";
+type ModelAlias = "google/gemini-3.1-flash-image-preview" | "openai/gpt-5.4-image-2";
 
 interface ImageGeneratorPanelProps {
   elementId: string;
@@ -46,7 +46,7 @@ export function ImageGeneratorPanel({
   const [referenceImage, setReferenceImage] = useState<File | string | null>(
     null,
   );
-  const [model, setModel] = useState<ModelAlias>("nano-banana");
+  const [model, setModel] = useState<ModelAlias>("google/gemini-3.1-flash-image-preview");
 
   // Auto-fill reference image from source
   React.useEffect(() => {
@@ -196,31 +196,33 @@ export function ImageGeneratorPanel({
                 <Sparkles size={8} className="text-white" />
               </div>
               <span>
-                {model === "nano-banana" ? "Nano Banana" : "Nano Banana Pro"}
+                {model === "google/gemini-3.1-flash-image-preview" ? "Gemini 3.1 Flash" : "GPT 5.4 Image 2"}
               </span>
               <ChevronDown size={12} className="text-gray-400" />
             </button>
             {showModelMenu && (
-              <div className="absolute bottom-full mb-1 left-0 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-10 min-w-[140px]">
+              <div className="absolute bottom-full mb-1 left-0 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-10 min-w-[160px]">
                 <div
                   onClick={() => {
-                    setModel("nano-banana");
+                    setModel("google/gemini-3.1-flash-image-preview");
                     setShowModelMenu(false);
                   }}
-                  className={`px-3 py-1.5 text-xs cursor-pointer hover:bg-gray-50 flex items-center gap-2 ${model === "nano-banana" ? "text-blue-500 font-medium" : "text-gray-700"}`}
+                  className={`px-3 py-1.5 text-xs cursor-pointer hover:bg-gray-50 flex items-center gap-2 ${model === "google/gemini-3.1-flash-image-preview" ? "text-blue-500 font-medium" : "text-gray-700"}`}
                 >
                   <Zap size={12} />
-                  <span>Nano Banana</span>
+                  <span>Gemini 3.1 Flash</span>
+                  <span className="text-gray-400">Google</span>
                 </div>
                 <div
                   onClick={() => {
-                    setModel("nano-banana-pro");
+                    setModel("openai/gpt-5.4-image-2");
                     setShowModelMenu(false);
                   }}
-                  className={`px-3 py-1.5 text-xs cursor-pointer hover:bg-gray-50 flex items-center gap-2 ${model === "nano-banana-pro" ? "text-blue-500 font-medium" : "text-gray-700"}`}
+                  className={`px-3 py-1.5 text-xs cursor-pointer hover:bg-gray-50 flex items-center gap-2 ${model === "openai/gpt-5.4-image-2" ? "text-blue-500 font-medium" : "text-gray-700"}`}
                 >
                   <Sparkles size={12} />
-                  <span>Nano Banana Pro</span>
+                  <span>GPT 5.4 Image 2</span>
+                  <span className="text-gray-400">OpenAI</span>
                 </div>
               </div>
             )}
