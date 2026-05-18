@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Minus, Plus, Maximize2 } from "lucide-react";
 import {
   Tooltip,
@@ -18,6 +19,21 @@ export function ZoomControls({
   onZoomOut,
   onZoomToFit,
 }: ZoomControlsProps) {
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      if (e.deltaY < 0) {
+        onZoomIn();
+      } else {
+        onZoomOut();
+      }
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: false, capture: true });
+    return () => window.removeEventListener("wheel", handleWheel, { capture: true });
+  }, [onZoomIn, onZoomOut]);
+
   return (
     <div className="absolute bottom-4 left-4 flex items-center bg-white rounded-lg shadow-sm border border-gray-100 p-1 z-50 gap-0.5">
       <Tooltip>

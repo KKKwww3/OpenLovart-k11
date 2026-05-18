@@ -1,5 +1,3 @@
-import { useEffect } from "react";
-
 interface UseCanvasOperationsParams {
   elements: { x: number; y: number; width?: number; height?: number }[];
   setScale: (scale: number | ((prev: number) => number)) => void;
@@ -53,39 +51,6 @@ export function useCanvasOperations(params: UseCanvasOperationsParams) {
       y: (containerH - contentH * fitScale) / 2 - minY * fitScale + padding * fitScale,
     });
   };
-
-  useEffect(() => {
-    const container = canvasContainerRef.current;
-    if (!container) return;
-
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      if (!e.ctrlKey) return;
-
-      const rect = container.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-
-      setScale((prevScale) => {
-        const zoomFactor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
-        const newScale = Math.min(Math.max(prevScale * zoomFactor, 0.1), 3);
-
-        setPan((prevPan) => {
-          const worldX = (mouseX - prevPan.x) / prevScale;
-          const worldY = (mouseY - prevPan.y) / prevScale;
-          return {
-            x: mouseX - worldX * newScale,
-            y: mouseY - worldY * newScale,
-          };
-        });
-
-        return newScale;
-      });
-    };
-
-    container.addEventListener("wheel", handleWheel, { passive: false });
-    return () => container.removeEventListener("wheel", handleWheel);
-  }, []);
 
   return {
     handleZoomIn,
