@@ -181,24 +181,15 @@ Deno.serve(async (req) => {
     let textAccumulator = "";
     let imageData: string | null = null;
     let encoder = new TextEncoder();
-    let streamController: ReadableByteStreamController | null = null;
+
+    const { readable, writable } = new TransformStream();
+    const writer = writable.getWriter();
 
     const writeSse = (event: string, data: string) => {
-      if (streamController) {
-        streamController.enqueue(encoder.encode(`event: ${event}\ndata: ${data}\n\n`));
-      }
+      writer.write(encoder.encode(`event: ${event}\ndata: ${data}\n\n`));
     };
 
-    const stream = new ReadableStream({
-      start(controller) {
-        streamController = controller;
-      },
-      async cancel() {
-        streamController = null;
-      },
-    });
-
-    // Process stream in background, enqueue chunks
+    // Process stream in background, write chunks
     (async () => {
       try {
         const reader = aiBody.getReader();
@@ -229,6 +220,9 @@ Deno.serve(async (req) => {
                 text: chunk.content,
                 accumulated: textAccumulator.slice(-200),
               }));
+
+              // Force flush each progress event to ensure real-time delivery
+              await writer.ready;
             }
 
             if (chunk.imageData && !imageData) {
@@ -273,14 +267,11 @@ Deno.serve(async (req) => {
         const msg = err instanceof Error ? err.message : "Unknown stream error";
         writeSse("error", JSON.stringify({ error: "Stream processing failed", details: msg }));
       } finally {
-        if (streamController) {
-          streamController.close();
-          streamController = null;
-        }
+        await writer.close();
       }
     })();
 
-    return new Response(stream, {
+    return new Response(readable, {
       headers: {
         ...corsHeaders,
         "Content-Type": "text/event-stream",

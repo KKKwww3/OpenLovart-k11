@@ -130,7 +130,7 @@ export function CanvasArea({
     if (activeTool === "draw") {
       setIsDrawing(true);
       const canvasX = (e.clientX - pan.x) / scale;
-      const canvasY = (e.clientY - 56 - pan.y) / scale;
+      const canvasY = (e.clientY - pan.y) / scale;
       setCurrentPath({ points: [{ x: canvasX, y: canvasY }] });
       return;
     }
@@ -144,9 +144,9 @@ export function CanvasArea({
       setIsSelecting(true);
       setSelectionBox({
         startX: (e.clientX - pan.x) / scale,
-        startY: (e.clientY - 56 - pan.y) / scale,
+        startY: (e.clientY - pan.y) / scale,
         currentX: (e.clientX - pan.x) / scale,
-        currentY: (e.clientY - 56 - pan.y) / scale,
+        currentY: (e.clientY - pan.y) / scale,
       });
       setEditingTextId(null);
       return;
@@ -227,7 +227,7 @@ export function CanvasArea({
 
   const handleMouseMove = (e: React.MouseEvent) => {
     const canvasX = (e.clientX - pan.x) / scale;
-    const canvasY = (e.clientY - 56 - pan.y) / scale;
+    const canvasY = (e.clientY - pan.y) / scale;
 
     if (isDrawing && currentPath) {
       setCurrentPath((prev) =>
@@ -487,7 +487,7 @@ export function CanvasArea({
       {/* Content Container with Scale and Pan */}
       <div
         ref={containerRef}
-        className="w-full h-full origin-top-left transition-transform duration-200 ease-out" // Changed origin to top-left for easier math
+        className="w-full h-full origin-top-left"
         style={{
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
         }}

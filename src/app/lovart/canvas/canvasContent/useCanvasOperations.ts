@@ -10,44 +10,29 @@ interface UseCanvasOperationsParams {
 export function useCanvasOperations(params: UseCanvasOperationsParams) {
   const { setScale, setPan, canvasContainerRef, elements } = params;
 
+  const zoomAtPoint = (scaleChange: number, minScale: number, maxScale: number, clientX?: number, clientY?: number) => {
+    const rect = canvasContainerRef.current?.getBoundingClientRect();
+    if (!rect) return (prev: number) => Math.min(maxScale, Math.max(minScale, prev + scaleChange));
+
+    const centerX = clientX !== undefined ? clientX - rect.left : rect.width / 2;
+    const centerY = clientY !== undefined ? clientY - rect.top : rect.height / 2;
+
+    return (prevScale: number) => {
+      const newScale = Math.min(maxScale, Math.max(minScale, prevScale + scaleChange));
+      setPan((prevPan) => ({
+        x: centerX - (centerX - prevPan.x) * (newScale / prevScale),
+        y: centerY - (centerY - prevPan.y) * (newScale / prevScale),
+      }));
+      return newScale;
+    };
+  };
+
   const handleZoomIn = useCallback((clientX?: number, clientY?: number) => {
-    if (clientX !== undefined && clientY !== undefined) {
-      const rect = canvasContainerRef.current?.getBoundingClientRect();
-      if (rect) {
-        const mouseX = clientX - rect.left;
-        const mouseY = clientY - rect.top;
-        setScale((prevScale) => {
-          const newScale = Math.min(prevScale + 0.1, 3);
-          setPan((prevPan) => ({
-            x: mouseX - (mouseX - prevPan.x) * (newScale / prevScale),
-            y: mouseY - (mouseY - prevPan.y) * (newScale / prevScale),
-          }));
-          return newScale;
-        });
-        return;
-      }
-    }
-    setScale((prev) => Math.min(prev + 0.1, 3));
+    setScale(zoomAtPoint(0.1, 0.1, 3, clientX, clientY));
   }, [setScale, setPan, canvasContainerRef]);
 
   const handleZoomOut = useCallback((clientX?: number, clientY?: number) => {
-    if (clientX !== undefined && clientY !== undefined) {
-      const rect = canvasContainerRef.current?.getBoundingClientRect();
-      if (rect) {
-        const mouseX = clientX - rect.left;
-        const mouseY = clientY - rect.top;
-        setScale((prevScale) => {
-          const newScale = Math.max(prevScale - 0.1, 0.1);
-          setPan((prevPan) => ({
-            x: mouseX - (mouseX - prevPan.x) * (newScale / prevScale),
-            y: mouseY - (mouseY - prevPan.y) * (newScale / prevScale),
-          }));
-          return newScale;
-        });
-        return;
-      }
-    }
-    setScale((prev) => Math.max(prev - 0.1, 0.1));
+    setScale(zoomAtPoint(-0.1, 0.1, 3, clientX, clientY));
   }, [setScale, setPan, canvasContainerRef]);
 
   const handleZoomToFit = useCallback(() => {
