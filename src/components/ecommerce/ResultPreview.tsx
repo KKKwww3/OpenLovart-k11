@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { Download, Plus, RotateCcw, Check } from "lucide-react";
+import React, { useState } from "react";
+import { Download, Plus, RotateCcw, Check, Trash2, X } from "lucide-react";
 
 export interface ResultItem {
   id: string;
@@ -15,6 +15,7 @@ export interface ResultPreviewProps {
   onAddAllToCanvas: () => void;
   onDownload?: (result: ResultItem) => void;
   onRetry?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 export function ResultPreview({
@@ -23,7 +24,10 @@ export function ResultPreview({
   onAddAllToCanvas,
   onDownload,
   onRetry,
+  onDelete,
 }: ResultPreviewProps) {
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+
   if (results.length === 0) return null;
 
   return (
@@ -50,7 +54,8 @@ export function ResultPreview({
             <img
               src={result.imageUrl}
               alt="生成结果"
-              className="w-full aspect-square object-cover"
+              className="w-full aspect-square object-cover cursor-pointer"
+              onClick={() => setPreviewSrc(result.imageUrl)}
             />
 
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -81,6 +86,16 @@ export function ResultPreview({
                   <RotateCcw size={16} className="text-gray-700" />
                 </button>
               )}
+
+              {onDelete && (
+                <button
+                  onClick={() => onDelete(result.id)}
+                  className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                  title="删除"
+                >
+                  <Trash2 size={16} className="text-white" />
+                </button>
+              )}
             </div>
 
             <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
@@ -91,6 +106,26 @@ export function ResultPreview({
           </div>
         ))}
       </div>
+
+      {previewSrc && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setPreviewSrc(null)}
+        >
+          <button
+            className="absolute top-4 right-4 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+            onClick={() => setPreviewSrc(null)}
+          >
+            <X size={20} className="text-white" />
+          </button>
+          <img
+            src={previewSrc}
+            alt="预览"
+            className="max-w-full max-h-full object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }

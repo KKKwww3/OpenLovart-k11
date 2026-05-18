@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useRef, useState } from "react";
-import { Upload, Image as ImageIcon, X, Plus } from "lucide-react";
+import { Upload, Image as ImageIcon, X, Plus, Trash2 } from "lucide-react";
 
 export interface UploadedFile {
   id: string;
@@ -32,6 +32,7 @@ export function UploadZone({
   className = "",
 }: UploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false);
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const convertToBase64 = useCallback(
@@ -186,7 +187,11 @@ export function UploadZone({
                 <img
                   src={item.preview}
                   alt="预览"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPreviewSrc(item.preview ?? null);
+                  }}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
@@ -198,9 +203,10 @@ export function UploadZone({
                   e.stopPropagation();
                   handleRemove(item.id);
                 }}
-                className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-1 right-1 w-6 h-6 bg-red-500/80 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors"
+                title="删除"
               >
-                <X size={12} className="text-white" />
+                <Trash2 size={12} className="text-white" />
               </button>
             </div>
           ))}
@@ -213,6 +219,25 @@ export function UploadZone({
               <Plus size={20} className="text-gray-400" />
             </button>
           )}
+        </div>
+      )}
+      {previewSrc && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setPreviewSrc(null)}
+        >
+          <button
+            className="absolute top-4 right-4 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+            onClick={() => setPreviewSrc(null)}
+          >
+            <X size={20} className="text-white" />
+          </button>
+          <img
+            src={previewSrc}
+            alt="预览"
+            className="max-w-full max-h-full object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>

@@ -1,19 +1,15 @@
 "use client";
 
 import React, { useState, useCallback, useRef } from "react";
-import { Zap, ChevronDown, Cpu } from "lucide-react";
+import { Zap } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { UploadZone, UploadedFile } from "../UploadZone";
 import { BatchProgress } from "../BatchProgress";
 import { ResultPreview, ResultItem } from "../ResultPreview";
+import { ModelSelector, DEFAULT_MODEL_OPTIONS } from "../ModelSelector";
 import { useBatchGeneration } from "@/hooks/useBatchGeneration";
 import { ProductReplacePrompt, PRODUCT_REPLACE_PROMPT } from "./ProductReplacePrompt";
 import { v4 as uuidv4 } from "uuid";
-
-const MODEL_OPTIONS = [
-  { value: "google/gemini-3.1-flash-image-preview", label: "Gemini 3.1 Flash", desc: "Google" },
-  { value: "openai/gpt-5.4-image-2", label: "GPT 5.4 Image 2", desc: "OpenAI" },
-] as const;
 
 export interface ProductReplaceModuleProps {
   onAddToCanvas: (imageUrl: string, x?: number, y?: number) => void;
@@ -26,8 +22,7 @@ export function ProductReplaceModule({ onAddToCanvas, supabase }: ProductReplace
   const [productFiles, setProductFiles] = useState<UploadedFile[]>([]);
   const productBase64MapRef = useRef<Map<string, string>>(new Map());
   const [currentPrompt, setCurrentPrompt] = useState(PRODUCT_REPLACE_PROMPT);
-  const [selectedModel, setSelectedModel] = useState<string>(MODEL_OPTIONS[0].value);
-  const [showModelMenu, setShowModelMenu] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<string>(DEFAULT_MODEL_OPTIONS[0].value);
   const [results, setResults] = useState<ResultItem[]>([]);
 
   const {
@@ -102,56 +97,10 @@ export function ProductReplaceModule({ onAddToCanvas, supabase }: ProductReplace
     <div className="space-y-4">
       <ProductReplacePrompt onPromptChange={setCurrentPrompt} />
 
-      <div className="space-y-3">
-        <label className="text-sm font-medium text-gray-700">AI 模型</label>
-        <div className="relative">
-          <button
-            onClick={() => setShowModelMenu(!showModelMenu)}
-            className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm hover:bg-gray-100 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <Cpu size={14} className="text-gray-400" />
-              <span className="text-gray-700 font-medium">
-                {MODEL_OPTIONS.find((m) => m.value === selectedModel)?.label}
-              </span>
-              <span className="text-xs text-gray-400">
-                {MODEL_OPTIONS.find((m) => m.value === selectedModel)?.desc}
-              </span>
-            </div>
-            <ChevronDown size={14} className="text-gray-400" />
-          </button>
-
-          {showModelMenu && (
-            <div className="absolute top-full mt-1 left-0 right-0 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-10">
-              {MODEL_OPTIONS.map((model) => (
-                <div
-                  key={model.value}
-                  onClick={() => {
-                    setSelectedModel(model.value);
-                    setShowModelMenu(false);
-                  }}
-                  className={`px-3 py-2.5 cursor-pointer hover:bg-gray-50 transition-colors ${
-                    selectedModel === model.value ? "bg-blue-50" : ""
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`text-sm font-medium ${
-                        selectedModel === model.value
-                          ? "text-blue-600"
-                          : "text-gray-700"
-                      }`}
-                    >
-                      {model.label}
-                    </span>
-                    <span className="text-xs text-gray-400">{model.desc}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+      <ModelSelector
+        value={selectedModel}
+        onChange={setSelectedModel}
+      />
 
       <div className="space-y-3">
         <label className="text-sm font-medium text-gray-700">场景图片</label>

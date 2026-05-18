@@ -59,6 +59,8 @@ function LovartCanvasContent() {
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isInitializedRef = useRef(false);
+  const elementsRef = useRef<CanvasElement[]>(elements);
+  elementsRef.current = elements;
 
   const handleZoomIn = () => setScale((prev) => Math.min(prev + 0.1, 3));
   const handleZoomOut = () => setScale((prev) => Math.max(prev - 0.1, 0.1));
@@ -633,42 +635,96 @@ function LovartCanvasContent() {
     }
   };
 
+  const findNonOverlappingSpot = useCallback(
+    (
+      existing: CanvasElement[],
+      itemWidth: number,
+      itemHeight: number,
+      baseX: number,
+      baseY: number,
+      gap: number = 40,
+    ): { x: number; y: number } => {
+      const isOverlapping = (x: number, y: number) =>
+        existing.some((el) => {
+          const elW = el.width ?? itemWidth;
+          const elH = el.height ?? itemHeight;
+          return !(
+            x + itemWidth + gap <= el.x ||
+            x >= el.x + elW + gap ||
+            y + itemHeight + gap <= el.y ||
+            y >= el.y + elH + gap
+          );
+        });
+
+      const maxCols = 5;
+      let offset = 0;
+      while (offset < 1000) {
+        const col = offset % maxCols;
+        const row = Math.floor(offset / maxCols);
+        const x = baseX + col * (itemWidth + gap);
+        const y = baseY + row * (itemHeight + gap);
+        if (!isOverlapping(x, y)) return { x, y };
+        offset++;
+      }
+      return { x: baseX, y: baseY };
+    },
+    [],
+  );
+
   const handleAddImageToCanvas = useCallback(
     (imageUrl: string, offsetX: number = 0, offsetY: number = 0) => {
-      const baseX = 300 - pan.x + elements.length * 20;
-      const baseY = 300 - pan.y + elements.length * 20;
+      const itemW = 400;
+      const itemH = 400;
+      const baseX = 300 - pan.x;
+      const baseY = 300 - pan.y;
+      const { x, y } = findNonOverlappingSpot(
+        elementsRef.current,
+        itemW,
+        itemH,
+        baseX,
+        baseY,
+      );
       const newElement: CanvasElement = {
         id: uuidv4(),
         type: "image",
-        x: baseX + offsetX,
-        y: baseY + offsetY,
-        width: 400,
-        height: 400,
+        x: x + offsetX,
+        y: y + offsetY,
+        width: itemW,
+        height: itemH,
         content: imageUrl,
       };
       setElements((prev) => [...prev, newElement]);
       setSelectedIds([newElement.id]);
     },
-    [pan, elements.length]
+    [pan, findNonOverlappingSpot],
   );
 
   const handleAddVideoToCanvasFromPanel = useCallback(
     (videoUrl: string, offsetX: number = 0, offsetY: number = 0) => {
-      const baseX = 300 - pan.x + elements.length * 20;
-      const baseY = 300 - pan.y + elements.length * 20;
+      const itemW = 420;
+      const itemH = 300;
+      const baseX = 300 - pan.x;
+      const baseY = 300 - pan.y;
+      const { x, y } = findNonOverlappingSpot(
+        elementsRef.current,
+        itemW,
+        itemH,
+        baseX,
+        baseY,
+      );
       const newElement: CanvasElement = {
         id: uuidv4(),
         type: "video",
-        x: baseX + offsetX,
-        y: baseY + offsetY,
-        width: 420,
-        height: 300,
+        x: x + offsetX,
+        y: y + offsetY,
+        width: itemW,
+        height: itemH,
         content: videoUrl,
       };
       setElements((prev) => [...prev, newElement]);
       setSelectedIds([newElement.id]);
     },
-    [pan, elements.length]
+    [pan, findNonOverlappingSpot],
   );
 
   // 显示加载状态
