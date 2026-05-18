@@ -30,6 +30,7 @@ export function ImageGeneratorDialog({
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [progressText, setProgressText] = useState<string>("");
 
   // New state for parameters
   const [resolution, setResolution] = useState<Resolution>("1K");
@@ -58,6 +59,7 @@ export function ImageGeneratorDialog({
     setIsGenerating(true);
     setError(null);
     setPreviewImage(null);
+    setProgressText("");
 
     try {
       let referenceDataBase64 = null;
@@ -79,6 +81,12 @@ export function ImageGeneratorDialog({
         referenceImage: referenceDataBase64 ?? undefined,
         mimeType: referenceImage?.type,
         model,
+      }, undefined, {
+        onProgress: (text) => {
+          if (text) {
+            setProgressText((prev) => prev + text);
+          }
+        },
       });
 
       setPreviewImage(data.imageData);
@@ -314,6 +322,23 @@ export function ImageGeneratorDialog({
           <div className="px-6 pb-4">
             <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg">
               {error}
+            </div>
+          </div>
+        )}
+
+        {/* Progress Indicator */}
+        {isGenerating && (
+          <div className="px-6 pb-4">
+            <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+              <div className="flex-shrink-0 w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-blue-700">正在生成...</p>
+                {progressText && (
+                  <p className="text-xs text-blue-500 truncate mt-0.5">
+                    {progressText.slice(-100)}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         )}

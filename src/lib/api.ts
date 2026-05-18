@@ -9,8 +9,11 @@ export interface GenerateImageResponse {
   textResponse: string;
 }
 
-export interface GenerateImageStreamCallbacks {
+export interface GenerateImageCallbacks {
   onProgress?: (text: string, accumulated: string) => void;
+}
+
+export interface GenerateImageStreamCallbacks extends GenerateImageCallbacks {
   onComplete?: (result: GenerateImageResponse) => void;
   onError?: (error: string) => void;
 }
@@ -80,13 +83,14 @@ export async function generateImage(
     model?: string;
   },
   supabase?: SupabaseClient,
+  callbacks?: GenerateImageCallbacks,
 ): Promise<GenerateImageResponse> {
   const accessToken = await getAccessToken(supabase);
-  
+
   const headers: HeadersInit = {
     "Content-Type": "application/json",
   };
-  
+
   if (accessToken) {
     headers["Authorization"] = `Bearer ${accessToken}`;
   }
@@ -97,16 +101,89 @@ export async function generateImage(
     body: JSON.stringify(options),
   });
 
-  const data = await response.json();
-
   if (!response.ok) {
-    if (response.status === 401 || data.needsAuth) {
+    let errorData: Record<string, unknown>;
+    try {
+      errorData = await response.json();
+    } catch {
+      errorData = {};
+    }
+    if (response.status === 401 || errorData.needsAuth) {
       throw new Error("请先登录后再使用此功能");
     }
-    throw new Error(data.details || data.error || "Failed to generate image");
+    throw new Error(String(errorData.details || errorData.error || "Failed to generate image"));
   }
 
-  return data;
+  const reader = response.body?.getReader();
+  if (!reader) {
+    throw new Error("No response body");
+  }
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let textAccumulator = "";
+
+  return new Promise<GenerateImageResponse>((resolve, reject) => {
+    (async () => {
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const chunks = buffer.split("\n\n");
+          buffer = chunks.pop() || "";
+
+          for (const chunk of chunks) {
+            const lines = chunk.split("\n");
+            let eventType = "";
+            let dataStr = "";
+
+            for (const line of lines) {
+              if (line.startsWith("event: ")) {
+                eventType = line.slice(7).trim();
+              } else if (line.startsWith("data: ")) {
+                dataStr = line.slice(6).trim();
+              }
+            }
+
+            if (!dataStr) continue;
+
+            try {
+              const payload = JSON.parse(dataStr);
+
+              switch (eventType) {
+                case "progress":
+                  if (payload.text) {
+                    textAccumulator += payload.text;
+                  }
+                  callbacks?.onProgress?.(
+                    payload.text || "",
+                    payload.accumulated || textAccumulator.slice(-200),
+                  );
+                  break;
+                case "complete":
+                  resolve({
+                    imageData: payload.imageData || "",
+                    textResponse: payload.textResponse || "",
+                  });
+                  return;
+                case "error":
+                  reject(new Error(payload.error || payload.details || "Generation failed"));
+                  return;
+              }
+            } catch {
+              // skip malformed chunks
+            }
+          }
+        }
+
+        reject(new Error("Stream ended without completion event"));
+      } catch (err) {
+        reject(err instanceof Error ? err : new Error("Stream read failed"));
+      }
+    })();
+  });
 }
 
 export async function generateImageStream(

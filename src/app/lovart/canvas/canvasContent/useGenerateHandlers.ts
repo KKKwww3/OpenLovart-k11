@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { CanvasElement } from "@/components/lovart/CanvasArea";
 import { generateDesign, generateImage } from "@/lib/api";
@@ -12,6 +13,7 @@ interface UseGenerateHandlersParams {
   setSelectedIds: (ids: string[] | ((prev: string[]) => string[])) => void;
   setActiveTool: (tool: string) => void;
   setIsGenerating: (generating: boolean) => void;
+  onProgress?: (text: string) => void;
 }
 
 export function useGenerateHandlers(params: UseGenerateHandlersParams) {
@@ -24,9 +26,10 @@ export function useGenerateHandlers(params: UseGenerateHandlersParams) {
     setSelectedIds,
     setActiveTool,
     setIsGenerating,
+    onProgress,
   } = params;
 
-  const handleGenerateVideo = async (videoUrl: string) => {
+  const handleGenerateVideo = useCallback(async (videoUrl: string) => {
     const currentElements = elementsRef.current;
     const generatorElementId = selectedIds.find(
       (id) => currentElements.find((el) => el.id === id)?.type === "video-generator",
@@ -54,9 +57,9 @@ export function useGenerateHandlers(params: UseGenerateHandlersParams) {
       setElements((prev) => [...prev, newElement]);
       setSelectedIds([newElement.id]);
     }
-  };
+  }, [elementsRef, selectedIds, pan, setElements, setSelectedIds]);
 
-  const handleConnectFlow = (sourceElement: CanvasElement) => {
+  const handleConnectFlow = useCallback((sourceElement: CanvasElement) => {
     if (!sourceElement.content) return;
 
     const spacing = 120;
@@ -105,13 +108,13 @@ export function useGenerateHandlers(params: UseGenerateHandlersParams) {
 
     setSelectedIds([generatorId]);
     setActiveTool("select");
-  };
+  }, [setElements, setSelectedIds, setActiveTool]);
 
-  const handleGenerateFromImage = (sourceImage: CanvasElement) => {
+  const handleGenerateFromImage = useCallback((sourceImage: CanvasElement) => {
     handleConnectFlow(sourceImage);
-  };
+  }, [handleConnectFlow]);
 
-  const handleGenerateImage = async (
+  const handleGenerateImage = useCallback(async (
     prompt: string,
     resolution: "1K" | "2K" | "4K",
     aspectRatio: "1:1" | "4:3" | "16:9",
@@ -125,7 +128,13 @@ export function useGenerateHandlers(params: UseGenerateHandlersParams) {
         referenceImage,
         mimeType: referenceImage ? "image/jpeg" : undefined,
         model,
-      }, supabase || undefined);
+      }, supabase || undefined, {
+        onProgress: (text) => {
+          if (text && onProgress) {
+            onProgress(text);
+          }
+        },
+      });
 
       const currentElements = elementsRef.current;
       const generatorElementId = selectedIds.find(
@@ -176,9 +185,9 @@ export function useGenerateHandlers(params: UseGenerateHandlersParams) {
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [elementsRef, selectedIds, pan, supabase, setElements, setSelectedIds, setIsGenerating, onProgress]);
 
-  const handleAiChat = async (prompt: string): Promise<string> => {
+  const handleAiChat = useCallback(async (prompt: string): Promise<string> => {
     setIsGenerating(true);
     try {
       const suggestion = await generateDesign(prompt, supabase || undefined);
@@ -189,7 +198,7 @@ export function useGenerateHandlers(params: UseGenerateHandlersParams) {
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [setIsGenerating, supabase]);
 
   return {
     handleGenerateVideo,

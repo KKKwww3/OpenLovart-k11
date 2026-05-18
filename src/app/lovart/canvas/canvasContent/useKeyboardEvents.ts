@@ -16,6 +16,8 @@ export function useKeyboardEvents(params: UseKeyboardEventsParams) {
   const { elements, selectedIds, setElements, setSelectedIds, setPan, onZoomToFit } = params;
 
   const clipboardRef = useRef<CanvasElement[]>([]);
+  const spaceRef = useRef(false);
+  const panStartRef = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -23,6 +25,13 @@ export function useKeyboardEvents(params: UseKeyboardEventsParams) {
         document.activeElement?.tagName === "INPUT" ||
         document.activeElement?.tagName === "TEXTAREA"
       ) {
+        return;
+      }
+
+      if (e.code === "Space" && !e.repeat) {
+        spaceRef.current = true;
+        e.preventDefault();
+        document.body.style.cursor = "grab";
         return;
       }
 
@@ -46,25 +55,26 @@ export function useKeyboardEvents(params: UseKeyboardEventsParams) {
         if (clipboardRef.current.length === 0) return;
 
         const currentElements = elements;
-        const newElements = clipboardRef.current.map((el) => {
+        const newElements: CanvasElement[] = [];
+        for (const el of clipboardRef.current) {
           const itemW = el.width || 200;
           const itemH = el.height || 200;
           const baseX = el.x;
           const baseY = el.y;
           const { x, y } = findNonOverlappingSpot(
-            currentElements,
+            [...currentElements, ...newElements],
             itemW,
             itemH,
             baseX + 30,
             baseY + 30,
           );
-          return {
+          newElements.push({
             ...el,
             id: uuidv4(),
             x,
             y,
-          } as CanvasElement;
-        });
+          } as CanvasElement);
+        }
         setElements((prev) => [...prev, ...newElements]);
         setSelectedIds(newElements.map((el) => el.id));
         return;
@@ -83,22 +93,6 @@ export function useKeyboardEvents(params: UseKeyboardEventsParams) {
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [selectedIds, setElements, setSelectedIds, elements, onZoomToFit]);
-
-  const spaceRef = useRef(false);
-  const panStartRef = useRef({ x: 0, y: 0 });
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === "Space" && !e.repeat) {
-        spaceRef.current = true;
-        e.preventDefault();
-        document.body.style.cursor = "grab";
-      }
-    };
-
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.code === "Space") {
         spaceRef.current = false;
@@ -114,7 +108,7 @@ export function useKeyboardEvents(params: UseKeyboardEventsParams) {
       window.removeEventListener("keyup", handleKeyUp);
       document.body.style.cursor = "";
     };
-  }, []);
+  }, [selectedIds, setElements, setSelectedIds, elements, onZoomToFit]);
 
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {

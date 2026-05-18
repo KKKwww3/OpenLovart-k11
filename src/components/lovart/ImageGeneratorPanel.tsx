@@ -24,6 +24,7 @@ interface ImageGeneratorPanelProps {
     model?: ModelAlias,
   ) => Promise<void>;
   isGenerating: boolean;
+  progressText?: string;
   style?: React.CSSProperties;
   canvasElements?: Array<{
     id: string;
@@ -37,6 +38,7 @@ export function ImageGeneratorPanel({
   elementId,
   onGenerate,
   isGenerating,
+  progressText,
   style,
   canvasElements,
 }: ImageGeneratorPanelProps) {
@@ -163,7 +165,6 @@ export function ImageGeneratorPanel({
         />
       </div>
 
-      {/* Reference Image Preview */}
       {referenceImage && (
         <div className="px-4 pb-2">
           <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
@@ -179,6 +180,23 @@ export function ImageGeneratorPanel({
             >
               <X size={14} />
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Progress Indicator */}
+      {isGenerating && (
+        <div className="px-4 pb-2">
+          <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg">
+            <div className="w-3.5 h-3.5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-blue-700">正在生成...</p>
+              {progressText && (
+                <p className="text-[10px] text-blue-500 truncate mt-0.5">
+                  {progressText.slice(-80)}
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}

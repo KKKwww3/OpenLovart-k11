@@ -8,8 +8,8 @@ import {
 
 interface ZoomControlsProps {
   scale: number;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
+  onZoomIn: (clientX?: number, clientY?: number) => void;
+  onZoomOut: (clientX?: number, clientY?: number) => void;
   onZoomToFit: () => void;
 }
 
@@ -24,9 +24,9 @@ export function ZoomControls({
       if (!e.ctrlKey) return;
       e.preventDefault();
       if (e.deltaY < 0) {
-        onZoomIn();
+        onZoomIn(e.clientX, e.clientY);
       } else {
-        onZoomOut();
+        onZoomOut(e.clientX, e.clientY);
       }
     };
 
@@ -39,7 +39,7 @@ export function ZoomControls({
       <Tooltip>
         <TooltipTrigger asChild>
           <button
-            onClick={onZoomOut}
+            onClick={() => onZoomOut()}
             className="p-1.5 hover:bg-gray-50 rounded text-gray-500"
           >
             <Minus size={16} />
@@ -58,7 +58,7 @@ export function ZoomControls({
       <Tooltip>
         <TooltipTrigger asChild>
           <button
-            onClick={onZoomIn}
+            onClick={() => onZoomIn()}
             className="p-1.5 hover:bg-gray-50 rounded text-gray-500"
           >
             <Plus size={16} />

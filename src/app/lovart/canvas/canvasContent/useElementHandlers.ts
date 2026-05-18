@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { CanvasElement } from "@/components/lovart/CanvasArea";
 import { findNonOverlappingSpot } from "./utils";
@@ -13,7 +14,7 @@ interface UseElementHandlersParams {
 export function useElementHandlers(params: UseElementHandlersParams) {
   const { elementsRef, pan, setElements, setSelectedIds, setActiveTool } = params;
 
-  const handleAddImage = (file: File) => {
+  const handleAddImage = useCallback((file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const currentElements = elementsRef.current;
@@ -31,9 +32,9 @@ export function useElementHandlers(params: UseElementHandlersParams) {
       setActiveTool("select");
     };
     reader.readAsDataURL(file);
-  };
+  }, [elementsRef, pan, setElements, setSelectedIds, setActiveTool]);
 
-  const handleAddVideo = (file: File) => {
+  const handleAddVideo = useCallback((file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const currentElements = elementsRef.current;
@@ -51,9 +52,9 @@ export function useElementHandlers(params: UseElementHandlersParams) {
       setActiveTool("select");
     };
     reader.readAsDataURL(file);
-  };
+  }, [elementsRef, pan, setElements, setSelectedIds, setActiveTool]);
 
-  const handleAddText = () => {
+  const handleAddText = useCallback(() => {
     const currentElements = elementsRef.current;
     const newElement: CanvasElement = {
       id: uuidv4(),
@@ -65,9 +66,9 @@ export function useElementHandlers(params: UseElementHandlersParams) {
     setElements((prev) => [...prev, newElement]);
     setSelectedIds([newElement.id]);
     setActiveTool("select");
-  };
+  }, [elementsRef, pan, setElements, setSelectedIds, setActiveTool]);
 
-  const handleAddShape = (
+  const handleAddShape = useCallback((
     type: "square" | "circle" | "triangle" | "star" | "message" | "arrow-left" | "arrow-right",
   ) => {
     const currentElements = elementsRef.current;
@@ -84,20 +85,20 @@ export function useElementHandlers(params: UseElementHandlersParams) {
     setElements((prev) => [...prev, newElement]);
     setSelectedIds([newElement.id]);
     setActiveTool("select");
-  };
+  }, [elementsRef, pan, setElements, setSelectedIds, setActiveTool]);
 
-  const handleElementChange = (id: string, newAttrs: Partial<CanvasElement>) => {
+  const handleElementChange = useCallback((id: string, newAttrs: Partial<CanvasElement>) => {
     setElements((prev) =>
       prev.map((el) => (el.id === id ? { ...el, ...newAttrs } : el)),
     );
-  };
+  }, [setElements]);
 
-  const handleDelete = (id: string) => {
+  const handleDelete = useCallback((id: string) => {
     setElements((prev) => prev.filter((el) => el.id !== id));
     setSelectedIds((prev) => prev.filter((selectedId) => selectedId !== id));
-  };
+  }, [setElements, setSelectedIds]);
 
-  const handleOpenImageGenerator = () => {
+  const handleOpenImageGenerator = useCallback(() => {
     const currentElements = elementsRef.current;
     const newElement: CanvasElement = {
       id: uuidv4(),
@@ -110,9 +111,9 @@ export function useElementHandlers(params: UseElementHandlersParams) {
     setElements((prev) => [...prev, newElement]);
     setSelectedIds([newElement.id]);
     setActiveTool("select");
-  };
+  }, [elementsRef, pan, setElements, setSelectedIds, setActiveTool]);
 
-  const handleOpenVideoGenerator = () => {
+  const handleOpenVideoGenerator = useCallback(() => {
     const currentElements = elementsRef.current;
     const newElement: CanvasElement = {
       id: uuidv4(),
@@ -125,9 +126,9 @@ export function useElementHandlers(params: UseElementHandlersParams) {
     setElements((prev) => [...prev, newElement]);
     setSelectedIds([newElement.id]);
     setActiveTool("select");
-  };
+  }, [elementsRef, pan, setElements, setSelectedIds, setActiveTool]);
 
-  const handleAddImageToCanvas = (
+  const handleAddImageToCanvas = useCallback((
     imageUrl: string,
     offsetX: number = 0,
     offsetY: number = 0,
@@ -155,9 +156,9 @@ export function useElementHandlers(params: UseElementHandlersParams) {
     };
     setElements((prev) => [...prev, newElement]);
     setSelectedIds([newElement.id]);
-  };
+  }, [elementsRef, pan, setElements, setSelectedIds]);
 
-  const handleAddVideoToCanvasFromPanel = (
+  const handleAddVideoToCanvasFromPanel = useCallback((
     videoUrl: string,
     offsetX: number = 0,
     offsetY: number = 0,
@@ -185,7 +186,7 @@ export function useElementHandlers(params: UseElementHandlersParams) {
     };
     setElements((prev) => [...prev, newElement]);
     setSelectedIds([newElement.id]);
-  };
+  }, [elementsRef, pan, setElements, setSelectedIds]);
 
   return {
     handleAddImage,

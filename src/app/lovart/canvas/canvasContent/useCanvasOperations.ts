@@ -1,3 +1,5 @@
+import { useCallback } from "react";
+
 interface UseCanvasOperationsParams {
   elements: { x: number; y: number; width?: number; height?: number }[];
   setScale: (scale: number | ((prev: number) => number)) => void;
@@ -8,15 +10,47 @@ interface UseCanvasOperationsParams {
 export function useCanvasOperations(params: UseCanvasOperationsParams) {
   const { setScale, setPan, canvasContainerRef, elements } = params;
 
-  const handleZoomIn = () => {
+  const handleZoomIn = useCallback((clientX?: number, clientY?: number) => {
+    if (clientX !== undefined && clientY !== undefined) {
+      const rect = canvasContainerRef.current?.getBoundingClientRect();
+      if (rect) {
+        const mouseX = clientX - rect.left;
+        const mouseY = clientY - rect.top;
+        setScale((prevScale) => {
+          const newScale = Math.min(prevScale + 0.1, 3);
+          setPan((prevPan) => ({
+            x: mouseX - (mouseX - prevPan.x) * (newScale / prevScale),
+            y: mouseY - (mouseY - prevPan.y) * (newScale / prevScale),
+          }));
+          return newScale;
+        });
+        return;
+      }
+    }
     setScale((prev) => Math.min(prev + 0.1, 3));
-  };
+  }, [setScale, setPan, canvasContainerRef]);
 
-  const handleZoomOut = () => {
+  const handleZoomOut = useCallback((clientX?: number, clientY?: number) => {
+    if (clientX !== undefined && clientY !== undefined) {
+      const rect = canvasContainerRef.current?.getBoundingClientRect();
+      if (rect) {
+        const mouseX = clientX - rect.left;
+        const mouseY = clientY - rect.top;
+        setScale((prevScale) => {
+          const newScale = Math.max(prevScale - 0.1, 0.1);
+          setPan((prevPan) => ({
+            x: mouseX - (mouseX - prevPan.x) * (newScale / prevScale),
+            y: mouseY - (mouseY - prevPan.y) * (newScale / prevScale),
+          }));
+          return newScale;
+        });
+        return;
+      }
+    }
     setScale((prev) => Math.max(prev - 0.1, 0.1));
-  };
+  }, [setScale, setPan, canvasContainerRef]);
 
-  const handleZoomToFit = () => {
+  const handleZoomToFit = useCallback(() => {
     if (elements.length === 0) {
       setPan({ x: 0, y: 0 });
       setScale(1);
@@ -50,7 +84,7 @@ export function useCanvasOperations(params: UseCanvasOperationsParams) {
       x: (containerW - contentW * fitScale) / 2 - minX * fitScale + padding * fitScale,
       y: (containerH - contentH * fitScale) / 2 - minY * fitScale + padding * fitScale,
     });
-  };
+  }, [elements, setScale, setPan, canvasContainerRef]);
 
   return {
     handleZoomIn,

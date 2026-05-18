@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ChevronDown,
   Sparkles,
@@ -52,6 +52,8 @@ function CanvasContent() {
     canvasContainerRef, isSavingRef, needsSaveRef, hasLoadedRef,
   } = state;
 
+  const [progressText, setProgressText] = useState("");
+
   const { loadProject } = useProjectSave({
     supabase,
     elements,
@@ -76,7 +78,21 @@ function CanvasContent() {
   const generateOps = useGenerateHandlers({
     elementsRef, selectedIds, pan, supabase,
     setElements, setSelectedIds, setActiveTool, setIsGenerating,
+    onProgress: (text) => {
+      setProgressText((prev) => (prev + text).slice(-200));
+    },
   });
+
+  const handleGenerateImage = async (
+    prompt: string,
+    resolution: "1K" | "2K" | "4K",
+    aspectRatio: "1:1" | "4:3" | "16:9",
+    referenceImage?: string,
+    model?: string,
+  ) => {
+    setProgressText("");
+    return generateOps.handleGenerateImage(prompt, resolution, aspectRatio, referenceImage, model);
+  };
 
   const canvasOps = useCanvasOperations({
     elements, setScale, setPan, canvasContainerRef,
@@ -207,76 +223,77 @@ function CanvasContent() {
       )}
 
       <div className="absolute inset-0" ref={canvasContainerRef}>
-          <TooltipProvider delayDuration={400}>
-        <CanvasArea
-          scale={scale}
-          pan={pan}
-          onPanChange={setPan}
-          elements={elements}
-          selectedIds={selectedIds}
-          onSelect={setSelectedIds}
-          onElementChange={elementOps.handleElementChange}
-          onDelete={elementOps.handleDelete}
-          onAddElement={(element) => setElements((prev) => [...prev, element])}
-          activeTool={activeTool}
-          onDragStart={() => setIsDraggingElement(true)}
-          onDragEnd={() => setIsDraggingElement(false)}
-          onConnectFlow={generateOps.handleConnectFlow}
-        />
-        <FloatingToolbar
-          activeTool={activeTool}
-          onToolChange={setActiveTool}
-          onAddImage={elementOps.handleAddImage}
-          onAddVideo={elementOps.handleAddVideo}
-          onAddText={elementOps.handleAddText}
-          onAddShape={elementOps.handleAddShape}
-          onOpenImageGenerator={elementOps.handleOpenImageGenerator}
-          onOpenVideoGenerator={elementOps.handleOpenVideoGenerator}
-        />
+        <TooltipProvider delayDuration={400}>
+          <CanvasArea
+            scale={scale}
+            pan={pan}
+            onPanChange={setPan}
+            elements={elements}
+            selectedIds={selectedIds}
+            onSelect={setSelectedIds}
+            onElementChange={elementOps.handleElementChange}
+            onDelete={elementOps.handleDelete}
+            onAddElement={(element) => setElements((prev) => [...prev, element])}
+            activeTool={activeTool}
+            onDragStart={() => setIsDraggingElement(true)}
+            onDragEnd={() => setIsDraggingElement(false)}
+            onConnectFlow={generateOps.handleConnectFlow}
+          />
+          <FloatingToolbar
+            activeTool={activeTool}
+            onToolChange={setActiveTool}
+            onAddImage={elementOps.handleAddImage}
+            onAddVideo={elementOps.handleAddVideo}
+            onAddText={elementOps.handleAddText}
+            onAddShape={elementOps.handleAddShape}
+            onOpenImageGenerator={elementOps.handleOpenImageGenerator}
+            onOpenVideoGenerator={elementOps.handleOpenVideoGenerator}
+          />
 
-        {selectedIds.length === 1 && !isDraggingElement && (() => {
-          const selectedEl = elements.find((el) => el.id === selectedIds[0]);
-          if (selectedEl?.type === "image-generator") {
-            const left = selectedEl.x * scale + pan.x;
-            const top = (selectedEl.y + (selectedEl.height || 400)) * scale + pan.y + 20;
-            return (
-              <ImageGeneratorPanel
-                elementId={selectedIds[0]}
-                onGenerate={generateOps.handleGenerateImage}
-                isGenerating={isGenerating}
-                canvasElements={elements}
-                style={{ left: `${left}px`, top: `${top}px` }}
-              />
-            );
-          }
-          return null;
-        })()}
+          {selectedIds.length === 1 && !isDraggingElement && (() => {
+            const selectedEl = elements.find((el) => el.id === selectedIds[0]);
+            if (selectedEl?.type === "image-generator") {
+              const left = selectedEl.x * scale + pan.x;
+              const top = (selectedEl.y + (selectedEl.height || 400)) * scale + pan.y + 20;
+              return (
+                <ImageGeneratorPanel
+                  elementId={selectedIds[0]}
+                  onGenerate={handleGenerateImage}
+                  isGenerating={isGenerating}
+                  progressText={progressText}
+                  canvasElements={elements}
+                  style={{ left: `${left}px`, top: `${top}px` }}
+                />
+              );
+            }
+            return null;
+          })()}
 
-        {selectedIds.length === 1 && !isDraggingElement && (() => {
-          const selectedEl = elements.find((el) => el.id === selectedIds[0]);
-          if (selectedEl?.type === "video-generator") {
-            const left = selectedEl.x * scale + pan.x;
-            const top = (selectedEl.y + (selectedEl.height || 300)) * scale + pan.y + 20;
-            return (
-              <VideoGeneratorPanel
-                elementId={selectedIds[0]}
-                onGenerate={generateOps.handleGenerateVideo}
-                isGenerating={isGenerating}
-                canvasElements={elements}
-                style={{ left: `${left}px`, top: `${top}px` }}
-              />
-            );
-          }
-          return null;
-        })()}
+          {selectedIds.length === 1 && !isDraggingElement && (() => {
+            const selectedEl = elements.find((el) => el.id === selectedIds[0]);
+            if (selectedEl?.type === "video-generator") {
+              const left = selectedEl.x * scale + pan.x;
+              const top = (selectedEl.y + (selectedEl.height || 300)) * scale + pan.y + 20;
+              return (
+                <VideoGeneratorPanel
+                  elementId={selectedIds[0]}
+                  onGenerate={generateOps.handleGenerateVideo}
+                  isGenerating={isGenerating}
+                  canvasElements={elements}
+                  style={{ left: `${left}px`, top: `${top}px` }}
+                />
+              );
+            }
+            return null;
+          })()}
 
-        <ZoomControls
-          scale={scale}
-          onZoomIn={canvasOps.handleZoomIn}
-          onZoomOut={canvasOps.handleZoomOut}
-          onZoomToFit={canvasOps.handleZoomToFit}
-        />
-          </TooltipProvider>
+          <ZoomControls
+            scale={scale}
+            onZoomIn={canvasOps.handleZoomIn}
+            onZoomOut={canvasOps.handleZoomOut}
+            onZoomToFit={canvasOps.handleZoomToFit}
+          />
+        </TooltipProvider>
       </div>
     </div>
   );
