@@ -6,6 +6,7 @@ export interface GenerateDesignResponse {
 
 export interface GenerateImageResponse {
   imageData: string;
+  imageUrl?: string;
   textResponse: string;
 }
 
@@ -95,11 +96,22 @@ export async function generateImage(
     headers["Authorization"] = `Bearer ${accessToken}`;
   }
 
-  const response = await fetch("/api/generate-image", {
-    method: "POST",
-    headers,
-    body: JSON.stringify(options),
-  });
+  const bodyStr = JSON.stringify(options);
+  if (bodyStr.length > 4 * 1024 * 1024) {
+    throw new Error("图片数据过大，请压缩图片后重试（建议单张图片不超过2MB）");
+  }
+
+  let response: Response;
+  try {
+    response = await fetch("/api/generate-image", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(options),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "网络请求失败";
+    throw new Error(`网络请求失败: ${message}`);
+  }
 
   if (!response.ok) {
     let errorData: Record<string, unknown>;
@@ -165,6 +177,7 @@ export async function generateImage(
                 case "complete":
                   resolve({
                     imageData: payload.imageData || "",
+                    imageUrl: payload.imageUrl || undefined,
                     textResponse: payload.textResponse || "",
                   });
                   return;
@@ -207,11 +220,24 @@ export async function generateImageStream(
     headers["Authorization"] = `Bearer ${accessToken}`;
   }
 
-  const response = await fetch("/api/generate-image", {
-    method: "POST",
-    headers,
-    body: JSON.stringify(options),
-  });
+  const bodyStr = JSON.stringify(options);
+  if (bodyStr.length > 4 * 1024 * 1024) {
+    callbacks.onError?.("图片数据过大，请压缩图片后重试（建议单张图片不超过2MB）");
+    return;
+  }
+
+  let response: Response;
+  try {
+    response = await fetch("/api/generate-image", {
+      method: "POST",
+      headers,
+      body: JSON.stringify(options),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "网络请求失败";
+    callbacks.onError?.(`网络请求失败: ${message}`);
+    return;
+  }
 
   if (!response.ok) {
     let data: Record<string, unknown>;

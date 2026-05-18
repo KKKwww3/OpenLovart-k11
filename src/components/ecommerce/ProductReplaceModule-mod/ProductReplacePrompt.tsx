@@ -42,7 +42,7 @@ export function ProductReplacePrompt({ onPromptChange }: ProductReplacePromptPro
         </div>
         <div className="flex items-center gap-1">
           {isExpanded && (
-            <button
+            <span
               onClick={(e) => {
                 e.stopPropagation();
                 if (isEditing) {
@@ -52,10 +52,10 @@ export function ProductReplacePrompt({ onPromptChange }: ProductReplacePromptPro
                   setEditablePrompt(PRODUCT_REPLACE_PROMPT);
                 }
               }}
-              className="text-xs px-2 py-0.5 rounded bg-white border border-gray-200 text-gray-500 hover:text-gray-700"
+              className="text-xs px-2 py-0.5 rounded bg-white border border-gray-200 text-gray-500 hover:text-gray-700 cursor-pointer select-none"
             >
               {isEditing ? "保存" : "编辑"}
-            </button>
+            </span>
           )}
           {isExpanded ? (
             <ChevronUp size={14} className="text-gray-400" />

@@ -5,6 +5,7 @@ import {
   createErrorResponse,
   createJsonResponse,
   requireAuth,
+  getServiceSupabase,
 } from "../_shared/auth.ts";
 
 const DEFAULT_MODEL = "google/gemini-3.1-flash-image-preview";
@@ -246,6 +247,43 @@ Deno.serve(async (req) => {
           }
         }
 
+        // Upload generated image to Storage and return URL
+        let imageUrl: string | null = null;
+        if (imageData) {
+          try {
+            const supabase = getServiceSupabase();
+            const base64Str = imageData.includes("base64,")
+              ? imageData.split("base64,")[1]
+              : imageData;
+            const binaryStr = atob(base64Str);
+            const bytes = new Uint8Array(binaryStr.length);
+            for (let i = 0; i < binaryStr.length; i++) {
+              bytes[i] = binaryStr.charCodeAt(i);
+            }
+
+            const fileName = `${crypto.randomUUID()}.png`;
+            const filePath = `${user.id}/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+              .from("generated-images")
+              .upload(filePath, bytes, {
+                contentType: "image/png",
+                upsert: false,
+              });
+
+            if (uploadError) {
+              console.error("Storage upload error:", uploadError);
+            } else {
+              const { data: publicUrlData } = supabase.storage
+                .from("generated-images")
+                .getPublicUrl(filePath);
+              imageUrl = publicUrlData.publicUrl;
+            }
+          } catch (uploadErr) {
+            console.error("Failed to upload image to storage:", uploadErr);
+          }
+        }
+
         if (!imageData && !textAccumulator) {
           writeSse("error", JSON.stringify({
             error: "No image was generated",
@@ -259,6 +297,7 @@ Deno.serve(async (req) => {
         } else {
           writeSse("complete", JSON.stringify({
             imageData: imageData || "",
+            imageUrl: imageUrl || "",
             textResponse: textAccumulator.replace(/\n+/g, "\n").trim(),
           }));
         }
