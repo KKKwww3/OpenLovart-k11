@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import CanvasContent from "./canvasContent/CanvasContent";
+import CanvasContent from "@/components/lovart/canvasContent/CanvasContent";
 
 export default function LovartCanvas() {
   return (

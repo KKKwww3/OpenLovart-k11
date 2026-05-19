@@ -107,51 +107,6 @@ export default function LovartDashboard() {
           </div>
 
           <div className="px-8 py-12">
-            {/* 登录后显示的欢迎信息 停用 */}
-            {/* <div className="max-w-3xl mx-auto text-center mb-16">
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center text-white text-xl font-bold">
-                  L
-                </div>
-                <h1 className="text-4xl font-bold text-gray-900">
-                  Lovart 让设计更简单
-                </h1>
-              </div>
-              <p className="text-gray-500 mb-8">
-                输入想法即可生成，帮你完成一切
-              </p>
-
-              <div className="relative max-w-2xl mx-auto mb-6">
-                <input
-                  type="text"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="让 Lovart 为你自动生成内容或效果图吧"
-                  className="w-full px-6 py-4 pr-32 rounded-full bg-white shadow-sm focus:shadow-md outline-none transition-all text-base"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && inputValue.trim()) {
-                      handleGenerate();
-                    }
-                  }}
-                />
-                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                  <button
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    onClick={() => setInputValue("")}
-                  >
-                    <Sparkles size={20} className="text-gray-400" />
-                  </button>
-                  <button
-                    onClick={handleGenerate}
-                    disabled={!inputValue.trim() || isGenerating}
-                    className="px-4 py-2 bg-black text-white rounded-full text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isGenerating ? "生成中..." : "生成"}
-                  </button>
-                </div>
-              </div>
-            </div> */}
-
             <div className="max-w-7xl mx-auto">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-semibold text-gray-900">
