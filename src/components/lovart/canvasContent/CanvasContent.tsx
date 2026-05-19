@@ -19,6 +19,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useCanvasOperations } from "./useCanvasOperations";
 import { useKeyboardEvents } from "./useKeyboardEvents";
 import { ZoomControls } from "./ZoomControls";
+import { MinimapControls } from "./MinimapControls";
 
 function CanvasContent() {
   const supabase = useSupabase();
@@ -315,12 +316,23 @@ function CanvasContent() {
               return null;
             })()}
 
-          <ZoomControls
-            scale={scale}
-            onZoomIn={canvasOps.handleZoomIn}
-            onZoomOut={canvasOps.handleZoomOut}
-            onZoomToFit={canvasOps.handleZoomToFit}
-          />
+          <div className="absolute bottom-4 left-4 flex flex-col gap-2 z-50">
+            <MinimapControls
+              elements={elements}
+              scale={scale}
+              pan={pan}
+              canvasContainerRef={canvasContainerRef}
+              onZoomIn={canvasOps.handleZoomIn}
+              onZoomOut={canvasOps.handleZoomOut}
+              onPanChange={setPan}
+            />
+            <ZoomControls
+              scale={scale}
+              onZoomIn={canvasOps.handleZoomIn}
+              onZoomOut={canvasOps.handleZoomOut}
+              onZoomToFit={canvasOps.handleZoomToFit}
+            />
+          </div>
         </TooltipProvider>
       </div>
     </div>

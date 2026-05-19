@@ -39,7 +39,7 @@ export function ZoomControls({
   }, [onZoomIn, onZoomOut]);
 
   return (
-    <div className="absolute bottom-4 left-4 flex items-center bg-white rounded-lg shadow-sm border border-gray-100 p-1 z-50 gap-0.5">
+    <div className="flex items-center bg-white rounded-lg shadow-sm border border-gray-100 p-1 gap-0.5">
       <Tooltip>
         <TooltipTrigger asChild>
           <button
