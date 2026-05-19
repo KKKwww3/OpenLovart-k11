@@ -27,13 +27,13 @@ const MINIMAP_WIDTH = 200;
 const MINIMAP_HEIGHT = 132;
 
 const ELEMENT_COLORS: Record<string, string> = {
-  image: "#3B82F6",
-  video: "#3B82F6",
-  text: "#F59E0B",
-  shape: "#6B7280",
-  path: "#8B5CF6",
-  "image-generator": "#93C5FD",
-  "video-generator": "#93C5FD",
+  image: "#9CA3AF",
+  video: "#9CA3AF",
+  text: "#D1D5DB",
+  shape: "#9CA3AF",
+  path: "#9CA3AF",
+  "image-generator": "#9CA3AF",
+  "video-generator": "#9CA3AF",
 };
 
 export function MinimapControls({
@@ -89,11 +89,9 @@ export function MinimapControls({
       const bboxW = bounds.maxX - bounds.minX;
       const bboxH = bounds.maxY - bounds.minY;
       const mapScale = Math.min(MINIMAP_WIDTH / bboxW, MINIMAP_HEIGHT / bboxH);
-      const offsetX = (MINIMAP_WIDTH - bboxW * mapScale) / 2;
-      const offsetY = (MINIMAP_HEIGHT - bboxH * mapScale) / 2;
       return {
-        x: (minimapX - offsetX) / mapScale + bounds.minX,
-        y: (minimapY - offsetY) / mapScale + bounds.minY,
+        x: minimapX / mapScale + bounds.minX,
+        y: minimapY / mapScale + bounds.minY,
         scale: mapScale,
       };
     },
@@ -127,11 +125,9 @@ export function MinimapControls({
     const bboxW = bounds.maxX - bounds.minX;
     const bboxH = bounds.maxY - bounds.minY;
     const mapScale = Math.min(MINIMAP_WIDTH / bboxW, MINIMAP_HEIGHT / bboxH);
-    const offsetX = (MINIMAP_WIDTH - bboxW * mapScale) / 2;
-    const offsetY = (MINIMAP_HEIGHT - bboxH * mapScale) / 2;
 
-    const toMapX = (cx: number) => offsetX + (cx - bounds.minX) * mapScale;
-    const toMapY = (cy: number) => offsetY + (cy - bounds.minY) * mapScale;
+    const toMapX = (cx: number) => (cx - bounds.minX) * mapScale;
+    const toMapY = (cy: number) => (cy - bounds.minY) * mapScale;
     const toMapW = (w: number) => Math.max(w * mapScale, 1);
 
     const nonConnectors = elements.filter((el) => el.type !== "connector");
@@ -322,19 +318,14 @@ export function MinimapControls({
   return (
     <>
       {isOpen ? (
-        <Card size="sm" className="w-[220px] shadow-sm select-none">
-          <CardHeader className="py-1 px-3">
-            <CardTitle className="text-xs font-medium">小地图</CardTitle>
-            <CardAction>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-0.5 hover:bg-accent rounded text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <X size={14} />
-              </button>
-            </CardAction>
-          </CardHeader>
-          <CardContent className="p-2 pt-0">
+        <Card size="sm" className="w-[220px] shadow-sm select-none relative">
+          <CardContent className="p-1">
+            <button
+              onClick={() => setIsOpen(false)}
+              className="absolute top-1.5 right-1.5 p-0.5 hover:bg-black/10 rounded text-white/80 hover:text-white transition-colors z-10"
+            >
+              <X size={12} />
+            </button>
             <canvas
               ref={canvasRef}
               className="rounded-md border border-border bg-card w-full cursor-default"
