@@ -8,10 +8,7 @@ import { BatchProgress } from "../BatchProgress";
 import { ResultPreview, ResultItem } from "../ResultPreview";
 import { ModelSelector } from "../ModelSelector";
 import { useBatchGeneration } from "@/hooks/useBatchGeneration";
-import {
-  ProductReplacePrompt,
-  PRODUCT_REPLACE_PROMPT,
-} from "./ProductReplacePrompt";
+import { ProductReplacePrompt } from "./ProductReplacePrompt";
 import { v4 as uuidv4 } from "uuid";
 
 export interface ProductReplaceModuleProps {
@@ -26,7 +23,7 @@ export function ProductReplaceModule({
   const [sceneFiles, setSceneFiles] = useState<UploadedFile[]>([]);
   const [productFiles, setProductFiles] = useState<UploadedFile[]>([]);
   const productFileMapRef = useRef<Map<string, File>>(new Map());
-  const [currentPrompt, setCurrentPrompt] = useState(PRODUCT_REPLACE_PROMPT);
+  const [currentPrompt, setCurrentPrompt] = useState("");
   const [selectedModel, setSelectedModel] = useState<number | undefined>(
     undefined,
   );
@@ -106,7 +103,7 @@ export function ProductReplaceModule({
 
   return (
     <div className="space-y-4">
-      <ProductReplacePrompt onPromptChange={setCurrentPrompt} />
+      <ProductReplacePrompt supabase={supabase || null} onPromptChange={setCurrentPrompt} />
 
       <ModelSelector supabase={supabase || null} value={selectedModel} onChange={setSelectedModel} />
 

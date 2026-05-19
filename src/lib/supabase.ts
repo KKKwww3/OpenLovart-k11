@@ -110,6 +110,38 @@ export interface Database {
           updated_at?: string;
         };
       };
+      prompt_templates: {
+        Row: {
+          id: string;
+          module_key: string;
+          name: string;
+          content: string;
+          is_active: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          module_key: string;
+          name?: string;
+          content: string;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          module_key?: string;
+          name?: string;
+          content?: string;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
   };
 }
