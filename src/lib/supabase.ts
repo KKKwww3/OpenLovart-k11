@@ -3,6 +3,44 @@ import { createClient } from "@supabase/supabase-js";
 export interface Database {
   public: {
     Tables: {
+      ai_models: {
+        Row: {
+          id: number;
+          value: string;
+          label: string;
+          description: string;
+          provider: string;
+          category: string;
+          is_active: boolean;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: number;
+          value: string;
+          label: string;
+          description?: string;
+          provider?: string;
+          category?: string;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: number;
+          value?: string;
+          label?: string;
+          description?: string;
+          provider?: string;
+          category?: string;
+          is_active?: boolean;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       user_credits: {
         Row: {
           user_id: string;

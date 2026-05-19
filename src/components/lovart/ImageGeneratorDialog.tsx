@@ -11,23 +11,24 @@ import {
 } from "lucide-react";
 import { generateImage } from "@/lib/api";
 import { uploadImageToImgbbBrowser } from "@/lib/imgbb-browser";
+import { ModelSelector } from "@/components/ecommerce/ModelSelector";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 interface ImageGeneratorDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onImageGenerated: (imageData: string) => void;
+  supabase?: SupabaseClient | null;
 }
 
 type Resolution = "1K" | "2K" | "4K";
 type AspectRatio = "1:1" | "4:3" | "16:9";
-type ModelAlias =
-  | "google/gemini-3.1-flash-image-preview"
-  | "openai/gpt-5.4-image-2";
 
 export function ImageGeneratorDialog({
   isOpen,
   onClose,
   onImageGenerated,
+  supabase,
 }: ImageGeneratorDialogProps) {
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -39,12 +40,9 @@ export function ImageGeneratorDialog({
   const [resolution, setResolution] = useState<Resolution>("1K");
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("1:1");
   const [referenceImage, setReferenceImage] = useState<File | null>(null);
-  const [model, setModel] = useState<ModelAlias>(
-    "google/gemini-3.1-flash-image-preview",
-  );
+  const [modelId, setModelId] = useState<number | undefined>(undefined);
 
   // Dropdown states
-  const [showModelMenu, setShowModelMenu] = useState(false);
   const [showResolutionMenu, setShowResolutionMenu] = useState(false);
   const [showAspectRatioMenu, setShowAspectRatioMenu] = useState(false);
 
@@ -89,7 +87,7 @@ export function ImageGeneratorDialog({
         {
           prompt,
           referenceImage: referenceImageUrl,
-          model,
+          modelId,
         },
         undefined,
         {
@@ -150,54 +148,14 @@ export function ImageGeneratorDialog({
         <div className="px-6 py-4 flex items-center justify-between border-t border-gray-50">
           <div className="flex items-center gap-4">
             {/* Model Selector */}
-            <div className="relative">
-              <div
-                onClick={() => setShowModelMenu(!showModelMenu)}
-                className="flex items-center gap-2 text-gray-700 font-medium cursor-pointer hover:bg-gray-50 px-2 py-1 rounded-lg transition-colors"
-              >
-                <div className="w-5 h-5 bg-black rounded-full flex items-center justify-center">
-                  <Sparkles size={10} className="text-white" />
-                </div>
-                <div className="flex flex-col leading-none">
-                  <span className="text-sm">
-                    {model === "google/gemini-3.1-flash-image-preview"
-                      ? "Gemini 3.1 Flash"
-                      : "GPT 5.4 Image 2"}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {model === "google/gemini-3.1-flash-image-preview"
-                      ? "Google"
-                      : "OpenAI"}
-                  </span>
-                </div>
-                <ChevronDown size={14} className="text-gray-400 ml-1" />
-              </div>
-              {showModelMenu && (
-                <div className="absolute top-full mt-1 left-0 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-10 min-w-[170px]">
-                  <div
-                    onClick={() => {
-                      setModel("google/gemini-3.1-flash-image-preview");
-                      setShowModelMenu(false);
-                    }}
-                    className={`px-3 py-2 cursor-pointer hover:bg-gray-50 ${model === "google/gemini-3.1-flash-image-preview" ? "text-blue-500" : "text-gray-700"}`}
-                  >
-                    <span className="text-sm font-medium">
-                      Gemini 3.1 Flash
-                    </span>
-                    <span className="text-xs text-gray-400 ml-2">Google</span>
-                  </div>
-                  <div
-                    onClick={() => {
-                      setModel("openai/gpt-5.4-image-2");
-                      setShowModelMenu(false);
-                    }}
-                    className={`px-3 py-2 cursor-pointer hover:bg-gray-50 ${model === "openai/gpt-5.4-image-2" ? "text-blue-500" : "text-gray-700"}`}
-                  >
-                    <span className="text-sm font-medium">GPT 5.4 Image 2</span>
-                    <span className="text-xs text-gray-400 ml-2">OpenAI</span>
-                  </div>
-                </div>
-              )}
+            <div className="min-w-[140px]">
+              <ModelSelector
+                supabase={supabase || null}
+                category="image-generation"
+                value={modelId}
+                onChange={setModelId}
+                label=""
+              />
             </div>
 
             {/* Reference Image Upload */}

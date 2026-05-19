@@ -6,7 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { UploadZone, UploadedFile } from "../UploadZone";
 import { BatchProgress } from "../BatchProgress";
 import { ResultPreview, ResultItem } from "../ResultPreview";
-import { ModelSelector, DEFAULT_MODEL_OPTIONS } from "../ModelSelector";
+import { ModelSelector } from "../ModelSelector";
 import { useBatchGeneration } from "@/hooks/useBatchGeneration";
 import {
   ProductReplacePrompt,
@@ -27,8 +27,8 @@ export function ProductReplaceModule({
   const [productFiles, setProductFiles] = useState<UploadedFile[]>([]);
   const productFileMapRef = useRef<Map<string, File>>(new Map());
   const [currentPrompt, setCurrentPrompt] = useState(PRODUCT_REPLACE_PROMPT);
-  const [selectedModel, setSelectedModel] = useState<string>(
-    DEFAULT_MODEL_OPTIONS[0].value,
+  const [selectedModel, setSelectedModel] = useState<number | undefined>(
+    undefined,
   );
   const [results, setResults] = useState<ResultItem[]>([]);
 
@@ -72,7 +72,7 @@ export function ProductReplaceModule({
 
     await startBatch({
       tasks: tasksToCreate,
-      model: selectedModel,
+      modelId: selectedModel,
       concurrency: 2,
       onTaskComplete: (taskId, result) => {
         setResults((prev) => [...prev, { id: taskId, imageUrl: result }]);
@@ -108,7 +108,7 @@ export function ProductReplaceModule({
     <div className="space-y-4">
       <ProductReplacePrompt onPromptChange={setCurrentPrompt} />
 
-      <ModelSelector value={selectedModel} onChange={setSelectedModel} />
+      <ModelSelector supabase={supabase || null} value={selectedModel} onChange={setSelectedModel} />
 
       <div className="space-y-3">
         <label className="text-sm font-medium text-gray-700">场景图片</label>

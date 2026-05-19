@@ -2,7 +2,7 @@ export { ECommercePanel } from "./ECommercePanel";
 export { UploadZone } from "./UploadZone";
 export { BatchProgress } from "./BatchProgress";
 export { ResultPreview, SingleResultPreview } from "./ResultPreview";
-export { ModelSelector, DEFAULT_MODEL_OPTIONS } from "./ModelSelector";
+export { ModelSelector } from "./ModelSelector";
 export { ProductReplaceModule } from "./ProductReplaceModule-mod/ProductReplaceModule";
 export { MultiAngleModule } from "./MultiAngleModule";
 export { ModelGenerationModule } from "./ModelGenerationModule";

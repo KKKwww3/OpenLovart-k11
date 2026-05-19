@@ -86,7 +86,7 @@ export async function generateImage(
     referenceImage?: string;
     productImage?: string;
     mimeType?: string;
-    model?: string;
+    modelId?: number;
   },
   supabase?: SupabaseClient,
   callbacks?: GenerateImageCallbacks,
@@ -224,7 +224,7 @@ export async function generateImageStream(
     referenceImage?: string;
     productImage?: string;
     mimeType?: string;
-    model?: string;
+    modelId?: number;
   },
   callbacks: GenerateImageStreamCallbacks,
   supabase?: SupabaseClient,

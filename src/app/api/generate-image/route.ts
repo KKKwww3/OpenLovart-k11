@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       accessToken = session?.access_token;
     }
 
-    const { prompt, referenceImage, productImage, mimeType, model } =
+    const { prompt, referenceImage, productImage, mimeType, modelId } =
       await request.json();
 
     if (!prompt || typeof prompt !== "string") {
@@ -30,6 +30,33 @@ export async function POST(request: NextRequest) {
         { error: "Prompt is required" },
         { status: 400 },
       );
+    }
+
+    // Resolve modelId to the actual model value string from the database
+    let model: string | undefined;
+    if (modelId != null) {
+      const { data: modelData } = await supabase
+        .from("ai_models")
+        .select("value")
+        .eq("id", modelId)
+        .single<{ value: string }>();
+      if (modelData) {
+        model = modelData.value;
+      }
+    }
+
+    if (!model) {
+      // Fall back to default model
+      const { data: defaultModel } = await supabase
+        .from("ai_models")
+        .select("value")
+        .eq("is_active", true)
+        .order("sort_order")
+        .limit(1)
+        .single<{ value: string }>();
+      if (defaultModel) {
+        model = defaultModel.value;
+      }
     }
 
     if (!SUPABASE_URL) {

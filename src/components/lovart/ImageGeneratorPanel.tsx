@@ -4,7 +4,6 @@ import React, { useState, useRef } from "react";
 import { ChevronDown, Zap, Image as ImageIcon, Upload, X } from "lucide-react";
 import {
   ModelSelector,
-  DEFAULT_MODEL_OPTIONS,
 } from "@/components/ecommerce/ModelSelector";
 
 type Resolution = "1K" | "2K" | "4K";
@@ -17,7 +16,7 @@ interface ImageGeneratorPanelProps {
     resolution: Resolution,
     aspectRatio: AspectRatio,
     referenceImage?: string,
-    model?: string,
+    modelId?: number,
   ) => Promise<void>;
   isGenerating: boolean;
   progressText?: string;
@@ -28,6 +27,7 @@ interface ImageGeneratorPanelProps {
     content?: string;
     referenceImageId?: string;
   }>;
+  supabase: any;
 }
 
 export function ImageGeneratorPanel({
@@ -37,6 +37,7 @@ export function ImageGeneratorPanel({
   progressText,
   style,
   canvasElements,
+  supabase,
 }: ImageGeneratorPanelProps) {
   const [prompt, setPrompt] = useState("");
   const [resolution, setResolution] = useState<Resolution>("1K");
@@ -44,7 +45,7 @@ export function ImageGeneratorPanel({
   const [referenceImage, setReferenceImage] = useState<File | string | null>(
     null,
   );
-  const [model, setModel] = useState(DEFAULT_MODEL_OPTIONS[0].value);
+  const [modelId, setModelId] = useState<number | undefined>(undefined);
 
   // Auto-fill reference image from source
   React.useEffect(() => {
@@ -85,15 +86,12 @@ export function ImageGeneratorPanel({
 
     if (referenceImage) {
       if (typeof referenceImage === "string") {
-        // It's already a base64 string from canvas
         referenceImageBase64 = referenceImage;
       } else {
-        // It's a File object, need to convert to base64
         referenceImageBase64 = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => {
             const result = reader.result as string;
-            // Extract base64 part
             if (result && result.includes(",")) {
               resolve(result.split(",")[1]);
             } else {
@@ -111,7 +109,7 @@ export function ImageGeneratorPanel({
       resolution,
       aspectRatio,
       referenceImageBase64,
-      model,
+      modelId,
     );
   };
 
@@ -200,9 +198,9 @@ export function ImageGeneratorPanel({
       <div className="px-4 py-3 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <ModelSelector
-            options={DEFAULT_MODEL_OPTIONS}
-            value={model}
-            onChange={setModel}
+            supabase={supabase}
+            value={modelId}
+            onChange={setModelId}
             label=""
           />
 

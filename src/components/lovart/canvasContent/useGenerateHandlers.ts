@@ -134,7 +134,7 @@ export function useGenerateHandlers(params: UseGenerateHandlersParams) {
       resolution: "1K" | "2K" | "4K",
       aspectRatio: "1:1" | "4:3" | "16:9",
       referenceImage?: string,
-      model?: string,
+      modelId?: number,
     ) => {
       setIsGenerating(true);
       try {
@@ -151,7 +151,7 @@ export function useGenerateHandlers(params: UseGenerateHandlersParams) {
           {
             prompt,
             referenceImage: referenceImageUrl,
-            model,
+            modelId,
           },
           supabase || undefined,
           {

@@ -17,7 +17,7 @@ export interface BatchTask {
 
 export interface BatchGenerationOptions {
   tasks: Omit<BatchTask, "status" | "result" | "error" | "progress">[];
-  model?: string;
+  modelId?: number;
   concurrency?: number;
   onTaskComplete?: (taskId: string, result: string) => void;
   onTaskError?: (taskId: string, error: string) => void;
@@ -77,7 +77,7 @@ export function useBatchGeneration(
       : 0;
 
   const processTask = useCallback(
-    async (task: BatchTask, model?: string): Promise<BatchTask> => {
+    async (task: BatchTask, modelId?: number): Promise<BatchTask> => {
       try {
         setTasks((prev) =>
           prev.map((t) =>
@@ -123,7 +123,7 @@ export function useBatchGeneration(
                 prompt: task.prompt,
                 referenceImage: referenceImageUrl,
                 productImage: productImageUrl,
-                model,
+                modelId,
               },
               {
                 onStatus: (stage, message) => {
@@ -223,7 +223,7 @@ export function useBatchGeneration(
           const task = queue.shift();
           if (!task) break;
 
-          const result = await processTask(task, options.model);
+          const result = await processTask(task, options.modelId);
           results.push(result);
 
           if (result.status === "completed" && options.onTaskComplete) {
@@ -274,8 +274,8 @@ export function useBatchGeneration(
         ),
       );
 
-      const model = currentOptionsRef.current?.model;
-      await processTask({ ...task, status: "pending", progress: 0 }, model);
+      const modelId = currentOptionsRef.current?.modelId;
+      await processTask({ ...task, status: "pending", progress: 0 }, modelId);
     },
     [tasks, processTask],
   );

@@ -74,7 +74,6 @@ export function ModelGenerationModule({
 
     await startBatch({
       tasks: tasksToCreate,
-      model: "google/gemini-3.1-flash-image-preview",
       concurrency: 2,
       onTaskComplete: (taskId, result) => {
         setResults((prev) => [...prev, { id: taskId, imageUrl: result }]);

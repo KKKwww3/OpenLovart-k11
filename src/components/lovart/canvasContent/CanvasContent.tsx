@@ -106,7 +106,7 @@ function CanvasContent() {
     resolution: "1K" | "2K" | "4K",
     aspectRatio: "1:1" | "4:3" | "16:9",
     referenceImage?: string,
-    model?: string,
+    modelId?: number,
   ) => {
     setProgressText("");
     return generateOps.handleGenerateImage(
@@ -114,7 +114,7 @@ function CanvasContent() {
       resolution,
       aspectRatio,
       referenceImage,
-      model,
+      modelId,
     );
   };
 
@@ -282,6 +282,7 @@ function CanvasContent() {
                     isGenerating={isGenerating}
                     progressText={progressText}
                     canvasElements={elements}
+                    supabase={supabase}
                     style={{ left: `${left}px`, top: `${top}px` }}
                   />
                 );
