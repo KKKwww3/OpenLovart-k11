@@ -41,11 +41,10 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  const isProtectedRoute =
-    (pathname.startsWith("/lovart/") && pathname !== "/lovart/login") ||
-    pathname === "/lovart";
+  const isPublicRoute =
+    pathname === "/lovart/login" || pathname.startsWith("/api/");
 
-  if (isProtectedRoute && !user) {
+  if (!isPublicRoute && !user) {
     const url = request.nextUrl.clone();
     url.pathname = "/lovart/login";
     return NextResponse.redirect(url);

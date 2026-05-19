@@ -206,7 +206,11 @@ function PromptNewCard({ onSave, onCancel }: PromptNewCardProps) {
   const handleCreate = useCallback(async () => {
     if (!name.trim() || !content.trim()) return;
     setSaving(true);
-    await onSave({ name: name.trim(), content: content.trim(), sort_order: sortOrder });
+    await onSave({
+      name: name.trim(),
+      content: content.trim(),
+      sort_order: sortOrder,
+    });
     setSaving(false);
     setName("");
     setContent("");
@@ -400,9 +404,7 @@ export function PromptPanelView({
                             <div className="flex items-center gap-1.5">
                               <span
                                 className={`text-xs font-medium ${
-                                  isActive
-                                    ? "text-gray-900"
-                                    : "text-gray-600"
+                                  isActive ? "text-gray-900" : "text-gray-600"
                                 }`}
                               >
                                 {p.name}

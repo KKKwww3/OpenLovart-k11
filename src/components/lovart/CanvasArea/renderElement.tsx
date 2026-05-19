@@ -3,9 +3,7 @@ import type { CanvasElement } from "./types";
 
 export function renderPath(points: { x: number; y: number }[]) {
   if (!points || points.length === 0) return "";
-  return points
-    .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`)
-    .join(" ");
+  return points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
 }
 
 interface CanvasElementItemProps {
@@ -66,9 +64,7 @@ export function CanvasElementItem({
       onMouseDown={(e) =>
         handleMouseDown(e, el.id, el.x, el.y, el.width, el.height)
       }
-      onDoubleClick={() =>
-        el.type === "text" && setEditingTextId(el.id)
-      }
+      onDoubleClick={() => el.type === "text" && setEditingTextId(el.id)}
     >
       {el.type === "image-generator" && (
         <div className="w-full h-full bg-blue-50 border-2 border-blue-400 rounded-xl flex flex-col items-center justify-center text-blue-500">
@@ -98,18 +94,20 @@ export function CanvasElementItem({
         </div>
       )}
 
-      {!selectedIds.includes(el.id) && !isDrawing && (() => {
-        const isLinked = selectedIds.some((selectedId) => {
-          const selectedEl = elements.find((e) => e.id === selectedId);
-          return (
-            selectedEl?.linkedElements?.includes(el.id) ||
-            el.linkedElements?.includes(selectedId)
-          );
-        });
-        return isLinked ? (
-          <div className="absolute inset-0 border-2 border-dashed border-purple-400 pointer-events-none opacity-60" />
-        ) : null;
-      })()}
+      {!selectedIds.includes(el.id) &&
+        !isDrawing &&
+        (() => {
+          const isLinked = selectedIds.some((selectedId) => {
+            const selectedEl = elements.find((e) => e.id === selectedId);
+            return (
+              selectedEl?.linkedElements?.includes(el.id) ||
+              el.linkedElements?.includes(selectedId)
+            );
+          });
+          return isLinked ? (
+            <div className="absolute inset-0 border-2 border-dashed border-purple-400 pointer-events-none opacity-60" />
+          ) : null;
+        })()}
 
       {selectedIds.includes(el.id) && !isDrawing && (
         <>
@@ -182,8 +180,8 @@ export function CanvasElementItem({
         </div>
       )}
 
-      {el.type === "text" && (
-        editingTextId === el.id ? (
+      {el.type === "text" &&
+        (editingTextId === el.id ? (
           <textarea
             autoFocus
             className="w-full h-full bg-transparent outline-none resize-none overflow-hidden"
@@ -211,8 +209,7 @@ export function CanvasElementItem({
           >
             {el.content || "Double click to edit"}
           </div>
-        )
-      )}
+        ))}
 
       {el.type === "shape" && (
         <div className="w-full h-full flex items-center justify-center">

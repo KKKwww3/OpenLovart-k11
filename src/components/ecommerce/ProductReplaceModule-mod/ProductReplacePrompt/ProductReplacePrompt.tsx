@@ -42,8 +42,20 @@ export function ProductReplacePrompt({
 
   const activePrompt = prompts.find((p) => p.id === activeId) || null;
   const currentContent = activePrompt?.content ?? "";
+
   const onPromptChangeRef = useRef(onPromptChange);
   onPromptChangeRef.current = onPromptChange;
+
+  const prevActiveIdRef = useRef(activeId);
+  useEffect(() => {
+    if (activeId !== prevActiveIdRef.current) {
+      prevActiveIdRef.current = activeId;
+      const prompt = prompts.find((p) => p.id === activeId);
+      if (prompt) {
+        onPromptChangeRef.current?.(prompt.content);
+      }
+    }
+  }, [activeId, prompts]);
 
   const fetchPrompts = useCallback(() => {
     if (!supabase) {
@@ -68,7 +80,6 @@ export function ProductReplacePrompt({
           setActiveId((prev) => {
             if (prev && typed.some((p) => p.id === prev)) return prev;
             const firstActive = typed.find((p) => p.is_active) || typed[0];
-            onPromptChangeRef.current?.(firstActive.content);
             return firstActive.id;
           });
         } else {
@@ -82,17 +93,10 @@ export function ProductReplacePrompt({
     fetchPrompts();
   }, [fetchPrompts]);
 
-  const handleSelectPrompt = useCallback(
-    (id: string) => {
-      setActiveId(id);
-      const prompt = prompts.find((p) => p.id === id);
-      if (prompt) {
-        onPromptChangeRef.current?.(prompt.content);
-      }
-      setIsEditing(false);
-    },
-    [prompts],
-  );
+  const handleSelectPrompt = useCallback((id: string) => {
+    setActiveId(id);
+    setIsEditing(false);
+  }, []);
 
   const handleSaveEdit = useCallback(async () => {
     if (!supabase || !activeId) return;
@@ -159,20 +163,17 @@ export function ProductReplacePrompt({
         console.error("Failed to update prompt:", error);
         return;
       }
+      if (id === activeId && fields.content) {
+        onPromptChangeRef.current?.(fields.content);
+      }
       setPrompts((prev) => {
         const updated = prev.map((p) =>
           p.id === id ? { ...p, ...fields } : p,
         );
-        if (id === activeId && fields.content) {
-          onPromptChangeRef.current?.(fields.content);
-        }
         if (id === activeId && fields.is_active === false) {
-          const another = updated.find(
-            (p) => p.is_active && p.id !== id,
-          );
+          const another = updated.find((p) => p.is_active && p.id !== id);
           if (another) {
             setActiveId(another.id);
-            onPromptChangeRef.current?.(another.content);
           }
         }
         return updated;
@@ -195,14 +196,11 @@ export function ProductReplacePrompt({
       setPrompts((prev) => {
         const filtered = prev.filter((p) => p.id !== id);
         if (id === activeId) {
-          const next =
-            filtered.find((p) => p.is_active) || filtered[0] || null;
+          const next = filtered.find((p) => p.is_active) || filtered[0] || null;
           if (next) {
             setActiveId(next.id);
-            onPromptChangeRef.current?.(next.content);
           } else {
             setActiveId(null);
-            onPromptChangeRef.current?.("");
           }
         }
         return filtered;

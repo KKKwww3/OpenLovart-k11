@@ -2,9 +2,7 @@
 
 import React, { useState, useRef } from "react";
 import { ChevronDown, Zap, Image as ImageIcon, Upload, X } from "lucide-react";
-import {
-  ModelSelector,
-} from "@/components/ecommerce/ModelSelector";
+import { ModelSelector } from "@/components/ecommerce/ModelSelector";
 
 type Resolution = "1K" | "2K" | "4K";
 type AspectRatio = "1:1" | "4:3" | "16:9";

@@ -51,11 +51,18 @@ export function MinimapControls({
   const [isOpen, setIsOpen] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const dragStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
+  const lastPosRef = useRef<{ x: number; y: number } | null>(null);
+  const clickScreenPosRef = useRef<{ x: number; y: number } | null>(null);
+  const panRef = useRef(pan);
   const hasMovedRef = useRef(false);
 
+  panRef.current = pan;
+
   const getBounds = useCallback(() => {
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    let minX = Infinity,
+      minY = Infinity,
+      maxX = -Infinity,
+      maxY = -Infinity;
     elements.forEach((el) => {
       if (el.type === "connector") return;
       const w = el.width || 200;
@@ -133,7 +140,9 @@ export function MinimapControls({
     elements
       .filter((el) => el.type === "connector")
       .forEach((connector) => {
-        const fromEl = nonConnectors.find((e) => e.id === connector.connectorFrom);
+        const fromEl = nonConnectors.find(
+          (e) => e.id === connector.connectorFrom,
+        );
         const toEl = nonConnectors.find((e) => e.id === connector.connectorTo);
         if (!fromEl || !toEl) return;
 
@@ -216,31 +225,47 @@ export function MinimapControls({
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
-      dragStartRef.current = {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-        panX: pan.x,
-        panY: pan.y,
+      const rawX = e.clientX - rect.left;
+      const rawY = e.clientY - rect.top;
+      lastPosRef.current = {
+        x: Math.max(0, Math.min(MINIMAP_WIDTH, rawX)),
+        y: Math.max(0, Math.min(MINIMAP_HEIGHT, rawY)),
       };
+      clickScreenPosRef.current = { x: e.clientX, y: e.clientY };
       hasMovedRef.current = false;
       setIsDragging(true);
     },
-    [pan],
+    [],
   );
 
   useEffect(() => {
-    if (!isDragging || !dragStartRef.current) return;
+    if (!isDragging || !lastPosRef.current) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
-      const currentX = e.clientX - rect.left;
-      const currentY = e.clientY - rect.top;
-      const dx = currentX - dragStartRef.current!.x;
-      const dy = currentY - dragStartRef.current!.y;
+      const rawX = e.clientX - rect.left;
+      const rawY = e.clientY - rect.top;
+      const clampedX = Math.max(0, Math.min(MINIMAP_WIDTH, rawX));
+      const clampedY = Math.max(0, Math.min(MINIMAP_HEIGHT, rawY));
 
-      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+      let dx = clampedX - lastPosRef.current!.x;
+      let dy = clampedY - lastPosRef.current!.y;
+
+      const OUTSIDE_MARGIN = 10;
+      if (rawX < -OUTSIDE_MARGIN) {
+        dx -= (Math.abs(rawX) - OUTSIDE_MARGIN) * 0.1;
+      } else if (rawX > MINIMAP_WIDTH + OUTSIDE_MARGIN) {
+        dx += (rawX - MINIMAP_WIDTH - OUTSIDE_MARGIN) * 0.1;
+      }
+      if (rawY < -OUTSIDE_MARGIN) {
+        dy -= (Math.abs(rawY) - OUTSIDE_MARGIN) * 0.1;
+      } else if (rawY > MINIMAP_HEIGHT + OUTSIDE_MARGIN) {
+        dy += (rawY - MINIMAP_HEIGHT - OUTSIDE_MARGIN) * 0.1;
+      }
+
+      if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
         hasMovedRef.current = true;
       }
 
@@ -252,18 +277,25 @@ export function MinimapControls({
       const canvasDx = (dx / mapScale) * scale;
       const canvasDy = (dy / mapScale) * scale;
 
+      const currentPan = panRef.current;
       onPanChange({
-        x: dragStartRef.current!.panX - canvasDx,
-        y: dragStartRef.current!.panY - canvasDy,
+        x: currentPan.x - canvasDx,
+        y: currentPan.y - canvasDy,
       });
+
+      lastPosRef.current = { x: clampedX, y: clampedY };
     };
 
-    const handleMouseUp = (e: MouseEvent) => {
-      if (!hasMovedRef.current) {
-        handleNavigate(e.clientX, e.clientY);
+    const handleMouseUp = () => {
+      if (!hasMovedRef.current && clickScreenPosRef.current) {
+        handleNavigate(
+          clickScreenPosRef.current.x,
+          clickScreenPosRef.current.y,
+        );
       }
       setIsDragging(false);
-      dragStartRef.current = null;
+      lastPosRef.current = null;
+      clickScreenPosRef.current = null;
     };
 
     window.addEventListener("mousemove", handleMouseMove);

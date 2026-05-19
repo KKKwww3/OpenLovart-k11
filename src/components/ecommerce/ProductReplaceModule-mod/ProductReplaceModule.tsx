@@ -103,9 +103,16 @@ export function ProductReplaceModule({
 
   return (
     <div className="space-y-4">
-      <ProductReplacePrompt supabase={supabase || null} onPromptChange={setCurrentPrompt} />
+      <ProductReplacePrompt
+        supabase={supabase || null}
+        onPromptChange={setCurrentPrompt}
+      />
 
-      <ModelSelector supabase={supabase || null} value={selectedModel} onChange={setSelectedModel} />
+      <ModelSelector
+        supabase={supabase || null}
+        value={selectedModel}
+        onChange={setSelectedModel}
+      />
 
       <div className="space-y-3">
         <label className="text-sm font-medium text-gray-700">场景图片</label>

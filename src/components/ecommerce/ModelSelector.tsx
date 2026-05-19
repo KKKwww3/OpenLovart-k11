@@ -78,7 +78,9 @@ export function ModelSelector({
           onClick={() => !disabled && !loading && setOpen(!open)}
           disabled={disabled || loading}
           className={`w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm transition-colors ${
-            disabled || loading ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100"
+            disabled || loading
+              ? "opacity-50 cursor-not-allowed"
+              : "hover:bg-gray-100"
           }`}
         >
           <div className="flex items-center gap-2">
@@ -120,7 +122,9 @@ export function ModelSelector({
                   >
                     {model.label}
                   </span>
-                  <span className="text-xs text-gray-400">{model.description}</span>
+                  <span className="text-xs text-gray-400">
+                    {model.description}
+                  </span>
                 </div>
               </div>
             ))}

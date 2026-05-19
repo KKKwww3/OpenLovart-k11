@@ -184,9 +184,7 @@ export function useProjectSave(params: UseProjectSaveParams) {
             (ce: { element_data: CanvasElement }) => ce.element_data,
           );
           const uniqueElements = Array.from(
-            new Map(
-              loadedElements.map((item) => [item.id, item]),
-            ).values(),
+            new Map(loadedElements.map((item) => [item.id, item])).values(),
           );
           console.log("Unique elements after dedup:", uniqueElements.length);
           setElements(uniqueElements);

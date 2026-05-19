@@ -56,26 +56,32 @@ export function CanvasArea({
       onMouseMove={handleMouseMove}
       onMouseDown={(e) => handleMouseDown(e, null)}
     >
-      {selectedIds.length === 1 && selectedElement && !isDragging && !isResizing && !isPanning && !isDrawing && selectedElement.type !== "connector" && (
-        <div
-          style={{
-            position: "absolute",
-            left:
-              (selectedElement.x + (selectedElement.width || 0) / 2) * scale +
-              pan.x,
-            top: (selectedElement.y - 60) * scale + pan.y,
-            transform: "translateX(-50%)",
-            zIndex: 100,
-          }}
-        >
-          <ContextToolbar
-            element={selectedElement}
-            onUpdate={onElementChange}
-            onDelete={onDelete}
-            onConnectFlow={onConnectFlow}
-          />
-        </div>
-      )}
+      {selectedIds.length === 1 &&
+        selectedElement &&
+        !isDragging &&
+        !isResizing &&
+        !isPanning &&
+        !isDrawing &&
+        selectedElement.type !== "connector" && (
+          <div
+            style={{
+              position: "absolute",
+              left:
+                (selectedElement.x + (selectedElement.width || 0) / 2) * scale +
+                pan.x,
+              top: (selectedElement.y - 60) * scale + pan.y,
+              transform: "translateX(-50%)",
+              zIndex: 100,
+            }}
+          >
+            <ContextToolbar
+              element={selectedElement}
+              onUpdate={onElementChange}
+              onDelete={onDelete}
+              onConnectFlow={onConnectFlow}
+            />
+          </div>
+        )}
 
       {selectedIds.length > 1 && !isDragging && (
         <div
