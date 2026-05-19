@@ -34,7 +34,6 @@ export function ModelSelector({
 
   useEffect(() => {
     if (!supabase) return;
-    setLoading(true);
     supabase
       .from("ai_models")
       .select("id, label, description")

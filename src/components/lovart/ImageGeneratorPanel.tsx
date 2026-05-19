@@ -3,6 +3,7 @@
 import React, { useState, useRef } from "react";
 import { ChevronDown, Zap, Image as ImageIcon, Upload, X } from "lucide-react";
 import { ModelSelector } from "@/components/ecommerce/ModelSelector";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 type Resolution = "1K" | "2K" | "4K";
 type AspectRatio = "1:1" | "4:3" | "16:9";
@@ -25,7 +26,7 @@ interface ImageGeneratorPanelProps {
     content?: string;
     referenceImageId?: string;
   }>;
-  supabase: any;
+  supabase: SupabaseClient | null;
 }
 
 export function ImageGeneratorPanel({

@@ -44,7 +44,9 @@ export function ProductReplacePrompt({
   const currentContent = activePrompt?.content ?? "";
 
   const onPromptChangeRef = useRef(onPromptChange);
-  onPromptChangeRef.current = onPromptChange;
+  useEffect(() => {
+    onPromptChangeRef.current = onPromptChange;
+  }, [onPromptChange]);
 
   const prevActiveIdRef = useRef(activeId);
   useEffect(() => {
@@ -58,11 +60,7 @@ export function ProductReplacePrompt({
   }, [activeId, prompts]);
 
   const fetchPrompts = useCallback(() => {
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
+    if (!supabase) return;
     supabase
       .from("prompt_templates")
       .select("id, module_key, name, content, is_active, sort_order")

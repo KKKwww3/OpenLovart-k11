@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import {
   ChevronDown,
   ChevronUp,
@@ -45,12 +45,6 @@ function PromptEditCard({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-
-  useEffect(() => {
-    setName(prompt.name);
-    setContent(prompt.content);
-    setSortOrder(prompt.sort_order);
-  }, [prompt.id, prompt.name, prompt.content, prompt.sort_order]);
 
   const isDirty =
     name !== prompt.name ||
@@ -537,7 +531,7 @@ export function PromptPanelView({
                 ))}
                 {prompts.length === 0 && !showNewForm && (
                   <div className="text-center py-6 text-xs text-gray-400">
-                    暂无提示词，点击"新建"创建
+                    暂无提示词，点击&ldquo;新建&rdquo;创建
                   </div>
                 )}
               </div>
