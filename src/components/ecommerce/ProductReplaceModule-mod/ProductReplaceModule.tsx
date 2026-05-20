@@ -32,6 +32,9 @@ export function ProductReplaceModule({
   const [imageSize, setImageSize] = useState("1K");
   const [showAspectRatioMenu, setShowAspectRatioMenu] = useState(false);
   const [showImageSizeMenu, setShowImageSizeMenu] = useState(false);
+  const [similarity, setSimilarity] = useState(100);
+  const [keepItems, setKeepItems] = useState("家具颜色纹理, 整体装修风格");
+  const [changeItems, setChangeItems] = useState("墙面装饰, 景深, 家居位置");
   const [results, setResults] = useState<ResultItem[]>([]);
 
   const {
@@ -56,15 +59,38 @@ export function ProductReplaceModule({
     setProductFiles(files);
   }, []);
 
+  const buildStyleAppendix = useCallback(() => {
+    const parts: string[] = [];
+
+    const keepTrimmed = keepItems.trim();
+    if (keepTrimmed) {
+      parts.push(`保持${keepTrimmed}不变`);
+    }
+
+    const changeTrimmed = changeItems.trim();
+    if (changeTrimmed) {
+      parts.push(`${changeTrimmed}可自由变化`);
+    }
+
+    if (similarity < 100) {
+      parts.push(`背景与参考图保持${similarity}%相似度即可，不必完全一致`);
+    }
+
+    return parts.length > 0 ? `\n\n【约束】${parts.join("，")}。` : "";
+  }, [keepItems, changeItems, similarity]);
+
   const handleGenerate = useCallback(async () => {
     if (productFiles.length === 0 || sceneFiles.length === 0) return;
 
     const sceneFile = sceneFiles[0]?.file;
     if (!sceneFile) return;
 
+    const styleAppendix = buildStyleAppendix();
+    const finalPrompt = currentPrompt + styleAppendix;
+
     const tasksToCreate = productFiles.map((pf) => ({
       id: uuidv4(),
-      prompt: currentPrompt,
+      prompt: finalPrompt,
       referenceImage: sceneFile,
       productImage: productFileMapRef.current.get(pf.id),
     }));
@@ -86,6 +112,7 @@ export function ProductReplaceModule({
     productFiles,
     sceneFiles,
     currentPrompt,
+    buildStyleAppendix,
     selectedModel,
     aspectRatio,
     imageSize,
@@ -191,6 +218,55 @@ export function ProductReplaceModule({
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <label className="text-sm font-medium text-gray-700">图片风格</label>
+        <div className="space-y-3 bg-gray-50 rounded-lg p-3">
+          <div>
+            <label className="text-xs text-gray-500 mb-1.5 block">
+              背景相似度
+            </label>
+            <div className="flex gap-1.5">
+              {[70, 85, 100].map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setSimilarity(value)}
+                  className={`flex-1 text-xs py-1.5 rounded-md border transition-colors ${
+                    similarity === value
+                      ? "bg-gray-900 text-white border-gray-900"
+                      : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  {value === 100 ? "完全一致" : `${value}%`}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 mb-1.5 block">
+              保持不变（逗号分隔）
+            </label>
+            <input
+              value={keepItems}
+              onChange={(e) => setKeepItems(e.target.value)}
+              className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
+              placeholder="例如：沙发颜色, 装修风格"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 mb-1.5 block">
+              可以变化（逗号分隔）
+            </label>
+            <input
+              value={changeItems}
+              onChange={(e) => setChangeItems(e.target.value)}
+              className="w-full px-2.5 py-1.5 text-xs bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
+              placeholder="例如：墙面装饰, 景深, 家居位置"
+            />
           </div>
         </div>
       </div>

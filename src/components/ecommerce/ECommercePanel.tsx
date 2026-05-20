@@ -233,24 +233,6 @@ export function ECommercePanel({
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">{renderModule()}</div>
-
-      <div className="px-4 py-2 border-t border-gray-100 bg-gray-50/50">
-        <div className="flex gap-1 overflow-x-auto pb-1">
-          {MODULE_TABS.map((module) => (
-            <button
-              key={module.id}
-              onClick={() => setActiveTab(module.id)}
-              className={`flex-shrink-0 px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
-                activeTab === module.id
-                  ? "bg-gray-900 text-white"
-                  : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-              }`}
-            >
-              {module.name}
-            </button>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

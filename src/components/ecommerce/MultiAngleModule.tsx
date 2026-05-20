@@ -146,12 +146,12 @@ export function MultiAngleModule({
 
   return (
     <div className="space-y-4">
-      <div className="bg-blue-50 rounded-lg p-3 flex items-start gap-2">
+      {/* <div className="bg-blue-50 rounded-lg p-3 flex items-start gap-2">
         <RotateCcw size={16} className="text-blue-500 mt-0.5" />
         <p className="text-xs text-blue-700">
           上传产品主图，选择需要生成的视角，一键渲染多角度展示图
         </p>
-      </div>
+      </div> */}
 
       <div className="space-y-3">
         <label className="text-sm font-medium text-gray-700">产品主图</label>
@@ -162,6 +162,11 @@ export function MultiAngleModule({
           placeholder="上传产品主图"
         />
       </div>
+      <ModelSelector
+        supabase={supabase || null}
+        value={selectedModel}
+        onChange={setSelectedModel}
+      />
 
       <AngleVectorControl
         value={angleConfig}
@@ -169,11 +174,7 @@ export function MultiAngleModule({
         disabled={isProcessing}
       />
 
-      <ModelSelector
-        supabase={supabase || null}
-        value={selectedModel}
-        onChange={setSelectedModel}
-      />
+      
 
       {tasks.length > 0 && (
         <BatchProgress
