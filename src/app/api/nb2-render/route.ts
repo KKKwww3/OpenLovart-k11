@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       accessToken = session?.access_token;
     }
 
-    const { sourceImage, prompt } = await request.json();
+    const { sourceImage, prompt, modelId } = await request.json();
 
     if (!sourceImage || typeof sourceImage !== "string") {
       return NextResponse.json(
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     const edgeResponse = await fetch(edgeUrl, {
       method: "POST",
       headers,
-      body: JSON.stringify({ sourceImage, prompt }),
+      body: JSON.stringify({ sourceImage, prompt, modelId }),
     });
 
     const data = await edgeResponse.json();

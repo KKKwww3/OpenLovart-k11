@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
   try {
     const user = await requireAuth(req);
 
-    const { prompt, referenceImage, productImage, model } = await req.json();
+    const { prompt, referenceImage, productImage, model, aspectRatio, imageSize } = await req.json();
 
     if (!prompt || typeof prompt !== "string") {
       return createErrorResponse("Prompt is required", 400);
@@ -75,6 +75,8 @@ Deno.serve(async (req) => {
         apiKey,
         model: actualModel,
         messages,
+        aspectRatio,
+        imageSize,
         writeSse,
       });
       await close();

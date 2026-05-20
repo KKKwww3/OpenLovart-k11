@@ -6,11 +6,13 @@ export interface ImageStreamOptions {
   apiKey: string;
   model: string;
   messages: { role: string; content: unknown }[];
+  aspectRatio?: string;
+  imageSize?: string;
   writeSse: (event: string, data: string) => Promise<void>;
 }
 
 export async function handleImageStream(options: ImageStreamOptions): Promise<void> {
-  const { apiBaseUrl, apiKey, model, messages, writeSse } = options;
+  const { apiBaseUrl, apiKey, model, messages, aspectRatio, imageSize, writeSse } = options;
   let textAccumulator = "";
   let imageData: string | null = null;
 
@@ -44,6 +46,24 @@ export async function handleImageStream(options: ImageStreamOptions): Promise<vo
       }
     }, 15_000);
 
+    const imageConfig: Record<string, string> = {};
+    if (aspectRatio) {
+      imageConfig.aspect_ratio = aspectRatio;
+    }
+    if (imageSize) {
+      imageConfig.image_size = imageSize;
+    }
+
+    const requestBody: Record<string, unknown> = {
+      model,
+      messages,
+      modalities: ["image", "text"],
+      stream: true,
+    };
+    if (Object.keys(imageConfig).length > 0) {
+      requestBody.image_config = imageConfig;
+    }
+
     let aiResponse: Response;
     try {
       aiResponse = await fetch(`${apiBaseUrl}/chat/completions`, {
@@ -52,12 +72,7 @@ export async function handleImageStream(options: ImageStreamOptions): Promise<vo
           Authorization: `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          model,
-          messages,
-          modalities: ["image", "text"],
-          stream: true,
-        }),
+        body: JSON.stringify(requestBody),
         signal: controller.signal,
       });
     } catch (fetchErr) {

@@ -8,6 +8,7 @@ import { BatchProgress } from "./BatchProgress";
 import { BatchTask } from "@/hooks/useBatchGeneration";
 import { ResultPreview, ResultItem } from "./ResultPreview";
 import { AngleVectorControl, AngleConfig } from "./AngleVectorControl";
+import { ModelSelector } from "./ModelSelector";
 import { ANGLE_PRESETS } from "@/config/multi-angle";
 import { nb2Render } from "@/lib/api";
 import { v4 as uuidv4 } from "uuid";
@@ -33,6 +34,7 @@ export function MultiAngleModule({
   const [tasks, setTasks] = useState<BatchTask[]>([]);
   const [results, setResults] = useState<ResultItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<number | undefined>(undefined);
 
   const selectedPresets = getSelectedPresets(angleConfig.selectedIds);
   const overallProgress = tasks.length > 0
@@ -80,6 +82,7 @@ export function MultiAngleModule({
           {
             sourceImage: fileBase64,
             prompt: preset.prompt,
+            modelId: selectedModel,
           },
           supabase,
         );
@@ -111,7 +114,7 @@ export function MultiAngleModule({
     }
 
     setIsProcessing(false);
-  }, [fileBase64, angleConfig, selectedPresets, supabase]);
+  }, [fileBase64, angleConfig, selectedPresets, selectedModel, supabase]);
 
   const handleCancel = useCallback(() => {
     setIsProcessing(false);
@@ -164,6 +167,12 @@ export function MultiAngleModule({
         value={angleConfig}
         onChange={setAngleConfig}
         disabled={isProcessing}
+      />
+
+      <ModelSelector
+        supabase={supabase || null}
+        value={selectedModel}
+        onChange={setSelectedModel}
       />
 
       {tasks.length > 0 && (

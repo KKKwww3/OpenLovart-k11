@@ -408,6 +408,7 @@ export async function generateVideo(
 export interface NB2RenderRequest {
   sourceImage: string;   // base64
   prompt: string;        // 角度提示词，如 "0° horizontal angle, 0° vertical angle, medium shot"
+  modelId?: number;      // 可选，用户选择的 AI 模型 ID
 }
 
 export interface NB2RenderResponse {

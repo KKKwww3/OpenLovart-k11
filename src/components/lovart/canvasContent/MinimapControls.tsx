@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Map, X } from "lucide-react";
+import { Map } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -47,6 +47,7 @@ export function MinimapControls({
 }: MinimapControlsProps) {
   const [isOpen, setIsOpen] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const lastPosRef = useRef<{ x: number; y: number } | null>(null);
   const clickScreenPosRef = useRef<{ x: number; y: number } | null>(null);
@@ -56,6 +57,17 @@ export function MinimapControls({
   useEffect(() => {
     panRef.current = pan;
   }, [pan]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleMouseDown = (e: MouseEvent) => {
+      if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => document.removeEventListener("mousedown", handleMouseDown);
+  }, [isOpen]);
 
   const getBounds = useCallback(() => {
     let minX = Infinity,
@@ -317,41 +329,40 @@ export function MinimapControls({
 
   return (
     <>
-      {isOpen ? (
-        <Card size="sm" className="w-[220px] shadow-sm select-none relative">
-          <CardContent className="p-1">
-            <button
-              onClick={() => setIsOpen(false)}
-              className="absolute top-1.5 right-1.5 p-0.5 hover:bg-black/10 rounded text-white/80 hover:text-white transition-colors z-10"
-            >
-              <X size={12} />
-            </button>
-            <canvas
-              ref={canvasRef}
-              className="rounded-md border border-border bg-card w-full cursor-default"
-              style={{ aspectRatio: `${MINIMAP_WIDTH} / ${MINIMAP_HEIGHT}` }}
-              onMouseDown={handleMouseDown}
-              onWheel={handleWheel}
-              role="img"
-              aria-label="画布小地图：点击跳转视口，拖拽平移，滚轮缩放"
-            />
-          </CardContent>
-        </Card>
-      ) : (
+      <div className="flex flex-col gap-2">
         <Tooltip>
           <TooltipTrigger asChild>
             <button
-              onClick={() => setIsOpen(true)}
-              className="flex items-center justify-center size-9 bg-white rounded-lg shadow-sm border border-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-colors"
+              onClick={() => setIsOpen((v) => !v)}
+              className={`flex items-center justify-center size-9 rounded-lg shadow-sm border transition-colors ${
+                isOpen
+                  ? "bg-gray-900 border-gray-900 text-white"
+                  : "bg-white border-gray-100 text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+              }`}
             >
               <Map size={16} />
             </button>
           </TooltipTrigger>
           <TooltipContent side="top">
-            <p>打开小地图</p>
+            <p>{isOpen ? "关闭小地图" : "打开小地图"}</p>
           </TooltipContent>
         </Tooltip>
-      )}
+        {isOpen && (
+          <Card ref={cardRef} size="sm" className="w-[220px] shadow-sm select-none">
+            <CardContent className="p-1">
+              <canvas
+                ref={canvasRef}
+                className="rounded-md border border-border bg-card w-full cursor-default"
+                style={{ aspectRatio: `${MINIMAP_WIDTH} / ${MINIMAP_HEIGHT}` }}
+                onMouseDown={handleMouseDown}
+                onWheel={handleWheel}
+                role="img"
+                aria-label="画布小地图：点击跳转视口，拖拽平移，滚轮缩放"
+              />
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </>
   );
 }
