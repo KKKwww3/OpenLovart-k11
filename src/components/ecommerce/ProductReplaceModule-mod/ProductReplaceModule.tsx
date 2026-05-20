@@ -11,11 +11,15 @@ import { useBatchGeneration } from "@/hooks/useBatchGeneration";
 import { ProductReplacePrompt } from "./ProductReplacePrompt";
 import { v4 as uuidv4 } from "uuid";
 import { ASPECT_RATIOS, IMAGE_SIZES } from "@/lib/api";
+import { stylePreprocess } from "@/lib/stylePreprocess";
+import { uploadImageToImgbbBrowser } from "@/lib/imgbb-browser";
 
 export interface ProductReplaceModuleProps {
   onAddToCanvas: (imageUrl: string, x?: number, y?: number) => void;
   supabase?: SupabaseClient;
 }
+
+type StepStatus = "idle" | "processing" | "done" | "error";
 
 export function ProductReplaceModule({
   onAddToCanvas,
@@ -32,10 +36,15 @@ export function ProductReplaceModule({
   const [imageSize, setImageSize] = useState("1K");
   const [showAspectRatioMenu, setShowAspectRatioMenu] = useState(false);
   const [showImageSizeMenu, setShowImageSizeMenu] = useState(false);
-  const [similarity, setSimilarity] = useState(100);
-  const [keepItems, setKeepItems] = useState("家具颜色纹理, 整体装修风格");
-  const [changeItems, setChangeItems] = useState("墙面装饰, 景深, 家居位置");
+  const [similarity, setSimilarity] = useState(50);
+  const [keepItems, setKeepItems] = useState("");
+  const [changeItems, setChangeItems] = useState("");
   const [results, setResults] = useState<ResultItem[]>([]);
+
+  const [styleStepStatus, setStyleStepStatus] = useState<StepStatus>("idle");
+  const [styleStepMessage, setStyleStepMessage] = useState("");
+  const [processedSceneUrl, setProcessedSceneUrl] = useState<string | null>(null);
+  const [styleStepError, setStyleStepError] = useState<string | null>(null);
 
   const {
     tasks,
@@ -48,6 +57,9 @@ export function ProductReplaceModule({
 
   const handleSceneChange = useCallback((files: UploadedFile[]) => {
     setSceneFiles(files);
+    setProcessedSceneUrl(null);
+    setStyleStepStatus("idle");
+    setStyleStepError(null);
   }, []);
 
   const handleProductChange = useCallback((files: UploadedFile[]) => {
@@ -59,44 +71,86 @@ export function ProductReplaceModule({
     setProductFiles(files);
   }, []);
 
-  const buildStyleAppendix = useCallback(() => {
-    const parts: string[] = [];
-
-    const keepTrimmed = keepItems.trim();
-    if (keepTrimmed) {
-      parts.push(`保持${keepTrimmed}不变`);
-    }
-
-    const changeTrimmed = changeItems.trim();
-    if (changeTrimmed) {
-      parts.push(`${changeTrimmed}可自由变化`);
-    }
-
-    if (similarity < 100) {
-      parts.push(`背景与参考图保持${similarity}%相似度即可，不必完全一致`);
-    }
-
-    return parts.length > 0 ? `\n\n【约束】${parts.join("，")}。` : "";
-  }, [keepItems, changeItems, similarity]);
+  const needsStylePreprocess = useCallback(() => {
+    return similarity < 100 ||
+           keepItems.trim() !== "" ||
+           changeItems.trim() !== "";
+  }, [similarity, keepItems, changeItems]);
 
   const handleGenerate = useCallback(async () => {
     if (productFiles.length === 0 || sceneFiles.length === 0) return;
 
-    const sceneFile = sceneFiles[0]?.file;
-    if (!sceneFile) return;
-
-    const styleAppendix = buildStyleAppendix();
-    const finalPrompt = currentPrompt + styleAppendix;
-
-    const tasksToCreate = productFiles.map((pf) => ({
-      id: uuidv4(),
-      prompt: finalPrompt,
-      referenceImage: sceneFile,
-      productImage: productFileMapRef.current.get(pf.id),
-    }));
+    const sceneFile = sceneFiles[0];
+    if (!sceneFile?.file) return;
 
     setResults([]);
     clearTasks();
+    setStyleStepError(null);
+
+    setStyleStepStatus("processing");
+    setStyleStepMessage("正在上传场景图...");
+
+    const uploadResult = await uploadImageToImgbbBrowser(sceneFile.file);
+    if (!uploadResult?.url) {
+      setStyleStepStatus("error");
+      setStyleStepError("场景图上传失败");
+      setStyleStepMessage("场景图上传失败，请重试");
+      return;
+    }
+
+    let sceneImageUrl = uploadResult.url;
+
+    if (needsStylePreprocess()) {
+      setStyleStepMessage("正在预处理场景图风格...");
+
+      const keepItemsArray = keepItems.split(",").map(s => s.trim()).filter(Boolean);
+      const changeItemsArray = changeItems.split(",").map(s => s.trim()).filter(Boolean);
+
+      await new Promise<void>((resolve) => {
+        stylePreprocess(
+          {
+            sceneImageUrl,
+            similarity,
+            keepItems: keepItemsArray,
+            changeItems: changeItemsArray,
+            modelId: selectedModel,
+          },
+          {
+            onStatus: (stage, message) => {
+              setStyleStepMessage(message);
+            },
+            onComplete: (result) => {
+              setProcessedSceneUrl(result.imageUrl);
+              sceneImageUrl = result.imageUrl;
+              setStyleStepStatus("done");
+              setStyleStepMessage("风格预处理完成");
+              resolve();
+            },
+            onError: (error) => {
+              setStyleStepStatus("error");
+              setStyleStepError(error);
+              setStyleStepMessage(`风格预处理失败: ${error}`);
+              resolve();
+            },
+          },
+          supabase,
+        );
+      });
+
+      if (styleStepStatus === "error") {
+        return;
+      }
+    } else {
+      setStyleStepStatus("done");
+      setStyleStepMessage("跳过风格预处理");
+    }
+
+    const tasksToCreate = productFiles.map((pf) => ({
+      id: uuidv4(),
+      prompt: currentPrompt,
+      referenceImage: sceneImageUrl,
+      productImage: productFileMapRef.current.get(pf.id),
+    }));
 
     await startBatch({
       tasks: tasksToCreate,
@@ -112,12 +166,17 @@ export function ProductReplaceModule({
     productFiles,
     sceneFiles,
     currentPrompt,
-    buildStyleAppendix,
+    needsStylePreprocess,
+    similarity,
+    keepItems,
+    changeItems,
     selectedModel,
     aspectRatio,
     imageSize,
     startBatch,
     clearTasks,
+    supabase,
+    styleStepStatus,
   ]);
 
   const handleAddToCanvas = useCallback(
@@ -136,6 +195,7 @@ export function ProductReplaceModule({
   }, [results, onAddToCanvas]);
 
   const hasSceneFile = sceneFiles.length > 0 && sceneFiles[0]?.file;
+  const isGenerating = styleStepStatus === "processing" || isProcessing;
 
   return (
     <div className="space-y-4">
@@ -227,23 +287,19 @@ export function ProductReplaceModule({
         <div className="space-y-3 bg-gray-50 rounded-lg p-3">
           <div>
             <label className="text-xs text-gray-500 mb-1.5 block">
-              背景相似度
+              背景相似度: {similarity}%
             </label>
-            <div className="flex gap-1.5">
-              {[70, 85, 100].map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setSimilarity(value)}
-                  className={`flex-1 text-xs py-1.5 rounded-md border transition-colors ${
-                    similarity === value
-                      ? "bg-gray-900 text-white border-gray-900"
-                      : "bg-white text-gray-500 border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  {value === 100 ? "完全一致" : `${value}%`}
-                </button>
-              ))}
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={similarity}
+              onChange={(e) => setSimilarity(Number(e.target.value))}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-gray-900"
+            />
+            <div className="flex justify-between text-xs text-gray-400 mt-1">
+              <span>低</span>
+              <span>高</span>
             </div>
           </div>
           <div>
@@ -280,6 +336,16 @@ export function ProductReplaceModule({
           onChange={handleSceneChange}
           placeholder="上传场景背景图（1张）"
         />
+        {processedSceneUrl && (
+          <div className="mt-2">
+            <p className="text-xs text-gray-500 mb-1">风格预处理后的场景图：</p>
+            <img
+              src={processedSceneUrl}
+              alt="Processed scene"
+              className="w-full h-24 object-cover rounded-lg border border-gray-200"
+            />
+          </div>
+        )}
       </div>
 
       <div className="space-y-3">
@@ -293,13 +359,38 @@ export function ProductReplaceModule({
         />
       </div>
 
-      {tasks.length > 0 && (
-        <BatchProgress
-          tasks={tasks}
-          overallProgress={overallProgress}
-          isProcessing={isProcessing}
-          onCancel={cancelBatch}
-        />
+      {(styleStepStatus !== "idle" || tasks.length > 0) && (
+        <div className="space-y-2 p-3 bg-gray-50 rounded-lg">
+          <div className="flex items-center gap-2 text-sm">
+            {styleStepStatus === "processing" && (
+              <>
+                <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-700 rounded-full animate-spin" />
+                <span className="text-gray-700">{styleStepMessage}</span>
+              </>
+            )}
+            {styleStepStatus === "done" && !isProcessing && (
+              <>
+                <span className="text-green-600">✓</span>
+                <span className="text-gray-600">{styleStepMessage}</span>
+              </>
+            )}
+            {styleStepStatus === "error" && (
+              <>
+                <span className="text-red-600">✗</span>
+                <span className="text-red-600">{styleStepError || "风格预处理失败"}</span>
+              </>
+            )}
+          </div>
+
+          {tasks.length > 0 && (
+            <BatchProgress
+              tasks={tasks}
+              overallProgress={overallProgress}
+              isProcessing={isProcessing}
+              onCancel={cancelBatch}
+            />
+          )}
+        </div>
       )}
 
       {results.length > 0 && (
@@ -312,16 +403,16 @@ export function ProductReplaceModule({
 
       <button
         onClick={handleGenerate}
-        disabled={productFiles.length === 0 || !hasSceneFile || isProcessing}
+        disabled={productFiles.length === 0 || !hasSceneFile || isGenerating}
         className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all ${
-          productFiles.length > 0 && hasSceneFile && !isProcessing
+          productFiles.length > 0 && hasSceneFile && !isGenerating
             ? "bg-gray-900 text-white hover:bg-gray-800"
             : "bg-gray-200 text-gray-400 cursor-not-allowed"
         }`}
       >
-        <Zap size={18} className={isProcessing ? "animate-pulse" : ""} />
+        <Zap size={18} className={isGenerating ? "animate-pulse" : ""} />
         <span>
-          {isProcessing ? "生成中..." : `批量替换 (${productFiles.length}张)`}
+          {isGenerating ? "生成中..." : `批量替换 (${productFiles.length}张)`}
         </span>
       </button>
     </div>
