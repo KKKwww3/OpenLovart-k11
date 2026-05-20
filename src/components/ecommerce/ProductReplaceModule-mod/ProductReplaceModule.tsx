@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useRef } from "react";
-import { Zap, ChevronDown } from "lucide-react";
+import { Zap, ChevronDown, RefreshCw, X } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { UploadZone, UploadedFile } from "../UploadZone";
 import { BatchProgress } from "../BatchProgress";
@@ -45,6 +45,9 @@ export function ProductReplaceModule({
   const [styleStepMessage, setStyleStepMessage] = useState("");
   const [processedSceneUrl, setProcessedSceneUrl] = useState<string | null>(null);
   const [styleStepError, setStyleStepError] = useState<string | null>(null);
+  const [originalSceneUrl, setOriginalSceneUrl] = useState<string | null>(null);
+
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const {
     tasks,
@@ -53,11 +56,13 @@ export function ProductReplaceModule({
     startBatch,
     cancelBatch,
     clearTasks,
+    retryTask,
   } = useBatchGeneration(supabase);
 
   const handleSceneChange = useCallback((files: UploadedFile[]) => {
     setSceneFiles(files);
     setProcessedSceneUrl(null);
+    setOriginalSceneUrl(null);
     setStyleStepStatus("idle");
     setStyleStepError(null);
   }, []);
@@ -76,6 +81,41 @@ export function ProductReplaceModule({
            keepItems.trim() !== "" ||
            changeItems.trim() !== "";
   }, [similarity, keepItems, changeItems]);
+
+  const doStylePreprocess = useCallback(async (sceneImageUrl: string): Promise<string | null> => {
+    const keepItemsArray = keepItems.split(",").map(s => s.trim()).filter(Boolean);
+    const changeItemsArray = changeItems.split(",").map(s => s.trim()).filter(Boolean);
+
+    return new Promise((resolve) => {
+      stylePreprocess(
+        {
+          sceneImageUrl,
+          similarity,
+          keepItems: keepItemsArray,
+          changeItems: changeItemsArray,
+          modelId: selectedModel,
+        },
+        {
+          onStatus: (stage, message) => {
+            setStyleStepMessage(message);
+          },
+          onComplete: (result) => {
+            setProcessedSceneUrl(result.imageUrl);
+            setStyleStepStatus("done");
+            setStyleStepMessage("风格预处理完成");
+            resolve(result.imageUrl);
+          },
+          onError: (error) => {
+            setStyleStepStatus("error");
+            setStyleStepError(error);
+            setStyleStepMessage(`风格预处理失败: ${error}`);
+            resolve(null);
+          },
+        },
+        supabase,
+      );
+    });
+  }, [similarity, keepItems, changeItems, selectedModel, supabase]);
 
   const handleGenerate = useCallback(async () => {
     if (productFiles.length === 0 || sceneFiles.length === 0) return;
@@ -99,47 +139,15 @@ export function ProductReplaceModule({
     }
 
     let sceneImageUrl = uploadResult.url;
+    setOriginalSceneUrl(sceneImageUrl);
 
     if (needsStylePreprocess()) {
       setStyleStepMessage("正在预处理场景图风格...");
-
-      const keepItemsArray = keepItems.split(",").map(s => s.trim()).filter(Boolean);
-      const changeItemsArray = changeItems.split(",").map(s => s.trim()).filter(Boolean);
-
-      await new Promise<void>((resolve) => {
-        stylePreprocess(
-          {
-            sceneImageUrl,
-            similarity,
-            keepItems: keepItemsArray,
-            changeItems: changeItemsArray,
-            modelId: selectedModel,
-          },
-          {
-            onStatus: (stage, message) => {
-              setStyleStepMessage(message);
-            },
-            onComplete: (result) => {
-              setProcessedSceneUrl(result.imageUrl);
-              sceneImageUrl = result.imageUrl;
-              setStyleStepStatus("done");
-              setStyleStepMessage("风格预处理完成");
-              resolve();
-            },
-            onError: (error) => {
-              setStyleStepStatus("error");
-              setStyleStepError(error);
-              setStyleStepMessage(`风格预处理失败: ${error}`);
-              resolve();
-            },
-          },
-          supabase,
-        );
-      });
-
-      if (styleStepStatus === "error") {
+      const processedUrl = await doStylePreprocess(sceneImageUrl);
+      if (!processedUrl) {
         return;
       }
+      sceneImageUrl = processedUrl;
     } else {
       setStyleStepStatus("done");
       setStyleStepMessage("跳过风格预处理");
@@ -167,17 +175,62 @@ export function ProductReplaceModule({
     sceneFiles,
     currentPrompt,
     needsStylePreprocess,
-    similarity,
-    keepItems,
-    changeItems,
+    doStylePreprocess,
     selectedModel,
     aspectRatio,
     imageSize,
     startBatch,
     clearTasks,
-    supabase,
-    styleStepStatus,
   ]);
+
+  const handleRetryStylePreprocess = useCallback(async () => {
+    if (!originalSceneUrl) return;
+
+    setStyleStepStatus("processing");
+    setStyleStepMessage("正在重试风格预处理...");
+    setStyleStepError(null);
+
+    const processedUrl = await doStylePreprocess(originalSceneUrl);
+    if (processedUrl) {
+      const tasksToCreate = productFiles.map((pf) => ({
+        id: uuidv4(),
+        prompt: currentPrompt,
+        referenceImage: processedUrl,
+        productImage: productFileMapRef.current.get(pf.id),
+      }));
+
+      await startBatch({
+        tasks: tasksToCreate,
+        modelId: selectedModel,
+        aspectRatio,
+        imageSize,
+        concurrency: 2,
+        onTaskComplete: (taskId, result) => {
+          setResults((prev) => [...prev, { id: taskId, imageUrl: result }]);
+        },
+      });
+    }
+  }, [
+    originalSceneUrl,
+    doStylePreprocess,
+    productFiles,
+    currentPrompt,
+    selectedModel,
+    aspectRatio,
+    imageSize,
+    startBatch,
+  ]);
+
+  const handleRetryProductReplace = useCallback(async () => {
+    if (!processedSceneUrl && !originalSceneUrl) return;
+
+    const failedTasks = tasks.filter(t => t.status === "failed");
+    if (failedTasks.length === 0) return;
+
+    for (const task of failedTasks) {
+      await retryTask(task.id);
+    }
+  }, [tasks, processedSceneUrl, originalSceneUrl, retryTask]);
 
   const handleAddToCanvas = useCallback(
     (result: ResultItem) => {
@@ -196,6 +249,8 @@ export function ProductReplaceModule({
 
   const hasSceneFile = sceneFiles.length > 0 && sceneFiles[0]?.file;
   const isGenerating = styleStepStatus === "processing" || isProcessing;
+
+  const hasFailedTasks = tasks.some(t => t.status === "failed");
 
   return (
     <div className="space-y-4">
@@ -342,7 +397,8 @@ export function ProductReplaceModule({
             <img
               src={processedSceneUrl}
               alt="Processed scene"
-              className="w-full h-24 object-cover rounded-lg border border-gray-200"
+              className="w-full h-24 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => setPreviewImage(processedSceneUrl)}
             />
           </div>
         )}
@@ -361,24 +417,35 @@ export function ProductReplaceModule({
 
       {(styleStepStatus !== "idle" || tasks.length > 0) && (
         <div className="space-y-2 p-3 bg-gray-50 rounded-lg">
-          <div className="flex items-center gap-2 text-sm">
-            {styleStepStatus === "processing" && (
-              <>
-                <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-700 rounded-full animate-spin" />
-                <span className="text-gray-700">{styleStepMessage}</span>
-              </>
-            )}
-            {styleStepStatus === "done" && !isProcessing && (
-              <>
-                <span className="text-green-600">✓</span>
-                <span className="text-gray-600">{styleStepMessage}</span>
-              </>
-            )}
+          <div className="flex items-center justify-between gap-2 text-sm">
+            <div className="flex items-center gap-2">
+              {styleStepStatus === "processing" && (
+                <>
+                  <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-700 rounded-full animate-spin" />
+                  <span className="text-gray-700">{styleStepMessage}</span>
+                </>
+              )}
+              {styleStepStatus === "done" && !isProcessing && (
+                <>
+                  <span className="text-green-600">✓</span>
+                  <span className="text-gray-600">{styleStepMessage}</span>
+                </>
+              )}
+              {styleStepStatus === "error" && (
+                <>
+                  <span className="text-red-600">✗</span>
+                  <span className="text-red-600">{styleStepError || "风格预处理失败"}</span>
+                </>
+              )}
+            </div>
             {styleStepStatus === "error" && (
-              <>
-                <span className="text-red-600">✗</span>
-                <span className="text-red-600">{styleStepError || "风格预处理失败"}</span>
-              </>
+              <button
+                onClick={handleRetryStylePreprocess}
+                className="flex items-center gap-1 px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+              >
+                <RefreshCw size={12} />
+                重试
+              </button>
             )}
           </div>
 
@@ -389,6 +456,18 @@ export function ProductReplaceModule({
               isProcessing={isProcessing}
               onCancel={cancelBatch}
             />
+          )}
+
+          {hasFailedTasks && !isProcessing && (
+            <div className="flex items-center justify-end">
+              <button
+                onClick={handleRetryProductReplace}
+                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+              >
+                <RefreshCw size={12} />
+                重试失败任务
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -415,6 +494,26 @@ export function ProductReplaceModule({
           {isGenerating ? "生成中..." : `批量替换 (${productFiles.length}张)`}
         </span>
       </button>
+
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setPreviewImage(null)}
+        >
+          <button
+            className="absolute top-4 right-4 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+            onClick={() => setPreviewImage(null)}
+          >
+            <X size={20} className="text-white" />
+          </button>
+          <img
+            src={previewImage}
+            alt="Preview"
+            className="max-w-full max-h-full object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }
