@@ -98,7 +98,9 @@ export async function authenticateUser(req: Request): Promise<AuthResult> {
   } catch (error) {
     return {
       success: false,
-      error: `Authentication error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      error: `Authentication error: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
     };
   }
 }

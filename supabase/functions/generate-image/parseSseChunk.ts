@@ -29,7 +29,9 @@ export function parseAiSseChunk(data: string): SseChunk | null {
         } else if (part.type === "image" && part.image_url?.url) {
           imageData = part.image_url.url;
         } else if (part.inlineData) {
-          imageData = `data:${part.inlineData.mimeType || "image/png"};base64,${part.inlineData.data}`;
+          imageData = `data:${
+            part.inlineData.mimeType || "image/png"
+          };base64,${part.inlineData.data}`;
         }
       }
     }
@@ -42,8 +44,7 @@ export function parseAiSseChunk(data: string): SseChunk | null {
     }
 
     const finishReason = choice.finish_reason;
-    const done =
-      finishReason === "stop" ||
+    const done = finishReason === "stop" ||
       finishReason === "length" ||
       finishReason === "content_filter";
 

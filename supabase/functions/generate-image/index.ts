@@ -1,11 +1,11 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import {
-  createOptionsResponse,
   createErrorResponse,
   createJsonResponse,
+  createOptionsResponse,
   requireAuth,
 } from "../_shared/auth.ts";
-import { createSseStream, createSseResponse } from "./sseWriter.ts";
+import { createSseResponse, createSseStream } from "./sseWriter.ts";
 import { handleImageStream } from "./imageStreamHandler.ts";
 
 Deno.serve(async (req) => {
@@ -14,9 +14,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const user = await requireAuth(req);
+    const _user = await requireAuth(req);
 
-    const { prompt, referenceImage, productImage, model, aspectRatio, imageSize } = await req.json();
+    const {
+      prompt,
+      referenceImage,
+      productImage,
+      model,
+      aspectRatio,
+      imageSize,
+    } = await req.json();
 
     if (!prompt || typeof prompt !== "string") {
       return createErrorResponse("Prompt is required", 400);

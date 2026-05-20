@@ -1,11 +1,14 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import {
-  createOptionsResponse,
   createErrorResponse,
   createJsonResponse,
+  createOptionsResponse,
   requireAuth,
 } from "../_shared/auth.ts";
-import { createSseStream, createSseResponse } from "../generate-image/sseWriter.ts";
+import {
+  createSseResponse,
+  createSseStream,
+} from "../generate-image/sseWriter.ts";
 import { parseAiSseChunk } from "../generate-image/parseSseChunk.ts";
 import { uploadImageToImgbb } from "../_shared/imgbb.ts";
 
@@ -31,7 +34,9 @@ function buildStylePrompt(config: StylePreprocessRequest): string {
   }
 
   if (config.similarity < 100) {
-    lines.push(`整体风格与原图保持${config.similarity}%相似度即可，不必完全一致。`);
+    lines.push(
+      `整体风格与原图保持${config.similarity}%相似度即可，不必完全一致。`,
+    );
   }
 
   lines.push("保持照片级真实感，无AI痕迹。");
@@ -45,9 +50,10 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const user = await requireAuth(req);
+    const _user = await requireAuth(req);
 
-    const { sceneImageUrl, similarity, keepItems, changeItems, model } = await req.json();
+    const { sceneImageUrl, similarity, keepItems, changeItems, model } =
+      await req.json();
 
     if (!sceneImageUrl || typeof sceneImageUrl !== "string") {
       return createErrorResponse("sceneImageUrl is required", 400);
@@ -119,11 +125,15 @@ Deno.serve(async (req) => {
 
         const heartbeatInterval = setInterval(async () => {
           try {
-            await writeSse("status", JSON.stringify({
-              stage: "preprocessing",
-              message: "AI 正在处理场景图风格，请稍候...",
-            }));
+            await writeSse(
+              "status",
+              JSON.stringify({
+                stage: "preprocessing",
+                message: "AI 正在处理场景图风格，请稍候...",
+              }),
+            );
           } catch {
+            // heartbeat send failed, ignore
           }
         }, 15_000);
 
@@ -148,8 +158,8 @@ Deno.serve(async (req) => {
         } catch (fetchErr) {
           clearTimeout(timeoutId);
           clearInterval(heartbeatInterval);
-          const isTimeout =
-            fetchErr instanceof Error && fetchErr.name === "AbortError";
+          const isTimeout = fetchErr instanceof Error &&
+            fetchErr.name === "AbortError";
           await writeSse(
             "error",
             JSON.stringify({
@@ -172,7 +182,9 @@ Deno.serve(async (req) => {
             "error",
             JSON.stringify({
               error: "AI 服务连接失败",
-              details: `状态码 ${aiResponse.status}: ${errorText.slice(0, 200)}`,
+              details: `状态码 ${aiResponse.status}: ${
+                errorText.slice(0, 200)
+              }`,
             }),
           );
           await close();

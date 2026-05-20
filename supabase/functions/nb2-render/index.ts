@@ -1,10 +1,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import {
-  createOptionsResponse,
-  createErrorResponse,
-  requireAuth,
-  getServiceSupabase,
   corsHeaders,
+  createErrorResponse,
+  createOptionsResponse,
+  getServiceSupabase,
+  requireAuth,
 } from "../_shared/auth.ts";
 import { uploadImageToImgbb } from "../_shared/imgbb.ts";
 
@@ -38,7 +38,9 @@ function parseSseChunk(data: string): SseChunk | null {
         } else if (part.type === "image" && part.image_url?.url) {
           imageData = part.image_url.url;
         } else if (part.inlineData) {
-          imageData = `data:${part.inlineData.mimeType || "image/png"};base64,${part.inlineData.data}`;
+          imageData = `data:${
+            part.inlineData.mimeType || "image/png"
+          };base64,${part.inlineData.data}`;
         }
       }
     }
@@ -51,8 +53,7 @@ function parseSseChunk(data: string): SseChunk | null {
     }
 
     const finishReason = choice.finish_reason;
-    const done =
-      finishReason === "stop" ||
+    const done = finishReason === "stop" ||
       finishReason === "length" ||
       finishReason === "content_filter";
 
@@ -71,14 +72,20 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const { sourceImage, prompt, modelId } = body;
 
-    if (!sourceImage) return createErrorResponse("sourceImage is required", 400);
+    if (!sourceImage) {
+      return createErrorResponse("sourceImage is required", 400);
+    }
     if (!prompt) return createErrorResponse("prompt is required", 400);
 
     const apiBaseUrl = Deno.env.get("IMAGE_API_BASE_URL");
     const apiKey = Deno.env.get("IMAGE_API_KEY");
 
-    if (!apiBaseUrl) return createErrorResponse("IMAGE_API_BASE_URL not configured", 500);
-    if (!apiKey) return createErrorResponse("IMAGE_API_KEY not configured", 500);
+    if (!apiBaseUrl) {
+      return createErrorResponse("IMAGE_API_BASE_URL not configured", 500);
+    }
+    if (!apiKey) {
+      return createErrorResponse("IMAGE_API_KEY not configured", 500);
+    }
 
     // 从数据库读取模型配置（通过 ai_models 表管理，用户在 Dashboard 填）
     const supabase = getServiceSupabase();
@@ -93,7 +100,10 @@ Deno.serve(async (req) => {
         .single<{ value: string }>();
 
       if (modelError || !modelData) {
-        return createErrorResponse(`Model with id ${modelId} not found or inactive`, 500);
+        return createErrorResponse(
+          `Model with id ${modelId} not found or inactive`,
+          500,
+        );
       }
       model = modelData.value;
     } else {

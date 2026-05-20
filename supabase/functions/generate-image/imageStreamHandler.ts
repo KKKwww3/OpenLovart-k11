@@ -11,8 +11,18 @@ export interface ImageStreamOptions {
   writeSse: (event: string, data: string) => Promise<void>;
 }
 
-export async function handleImageStream(options: ImageStreamOptions): Promise<void> {
-  const { apiBaseUrl, apiKey, model, messages, aspectRatio, imageSize, writeSse } = options;
+export async function handleImageStream(
+  options: ImageStreamOptions,
+): Promise<void> {
+  const {
+    apiBaseUrl,
+    apiKey,
+    model,
+    messages,
+    aspectRatio,
+    imageSize,
+    writeSse,
+  } = options;
   let textAccumulator = "";
   let imageData: string | null = null;
 
@@ -38,11 +48,15 @@ export async function handleImageStream(options: ImageStreamOptions): Promise<vo
 
     const heartbeatInterval = setInterval(async () => {
       try {
-        await writeSse("status", JSON.stringify({
-          stage: "generating",
-          message: "AI 正在生成图片，请稍候...",
-        }));
+        await writeSse(
+          "status",
+          JSON.stringify({
+            stage: "generating",
+            message: "AI 正在生成图片，请稍候...",
+          }),
+        );
       } catch {
+        // heartbeat send failed, ignore
       }
     }, 15_000);
 
@@ -78,8 +92,8 @@ export async function handleImageStream(options: ImageStreamOptions): Promise<vo
     } catch (fetchErr) {
       clearTimeout(timeoutId);
       clearInterval(heartbeatInterval);
-      const isTimeout =
-        fetchErr instanceof Error && fetchErr.name === "AbortError";
+      const isTimeout = fetchErr instanceof Error &&
+        fetchErr.name === "AbortError";
       await writeSse(
         "error",
         JSON.stringify({
@@ -229,8 +243,7 @@ export async function handleImageStream(options: ImageStreamOptions): Promise<vo
       msg.includes("connection") ||
       msg.includes("reset")
     ) {
-      userMsg =
-        "AI 服务连接中断，可能是网络不稳定或模型响应超时，请稍后重试";
+      userMsg = "AI 服务连接中断，可能是网络不稳定或模型响应超时，请稍后重试";
     }
     await writeSse(
       "error",

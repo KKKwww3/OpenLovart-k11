@@ -1,8 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import {
-  createOptionsResponse,
   createErrorResponse,
   createJsonResponse,
+  createOptionsResponse,
   requireAuth,
 } from "../_shared/auth.ts";
 
