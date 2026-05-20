@@ -31,6 +31,11 @@ export function ModelSelector({
   const [models, setModels] = useState<ModelOption[]>([]);
   const [loading, setLoading] = useState(true);
   const autoSelectedRef = useRef(false);
+  const onChangeRef = useRef(onChange);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  });
 
   useEffect(() => {
     if (!supabase) return;
@@ -45,12 +50,12 @@ export function ModelSelector({
           setModels(data);
           if (value === undefined && !autoSelectedRef.current) {
             autoSelectedRef.current = true;
-            onChange(data[0].id);
+            onChangeRef.current(data[0].id);
           }
         }
         setLoading(false);
       });
-  }, [supabase, category]);
+  }, [supabase, category, value]);
 
   useEffect(() => {
     if (!open) return;

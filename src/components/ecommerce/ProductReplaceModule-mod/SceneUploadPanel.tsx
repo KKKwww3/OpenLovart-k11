@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { X } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import React from "react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UploadZone, type UploadedFile } from "../UploadZone";
 import type { StepStatus } from "./types";
 

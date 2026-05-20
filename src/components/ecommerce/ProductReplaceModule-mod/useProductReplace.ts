@@ -50,32 +50,42 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     isProcessing,
     overallProgress,
     startBatch,
-    cancelBatch,
     clearTasks,
     retryTask,
   } = useBatchGeneration(supabase);
+
+  const syncedTaskIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const completedTasks = tasks.filter(t => t.status === "completed" && t.result);
     if (completedTasks.length === 0) return;
 
-    setResults(prev => {
-      const updated = [...prev];
-      let changed = false;
-      for (const task of completedTasks) {
-        const idx = updated.findIndex(r => r.id === task.id);
-        if (idx >= 0) {
-          if (updated[idx].imageUrl !== task.result) {
-            updated[idx] = { id: task.id, imageUrl: task.result! };
+    const newCompletions = completedTasks.filter(t => !syncedTaskIdsRef.current.has(t.id));
+    if (newCompletions.length === 0) return;
+
+    newCompletions.forEach(t => syncedTaskIdsRef.current.add(t.id));
+
+    const rafId = requestAnimationFrame(() => {
+      setResults(prev => {
+        const updated = [...prev];
+        let changed = false;
+        for (const task of newCompletions) {
+          const idx = updated.findIndex(r => r.id === task.id);
+          if (idx >= 0) {
+            if (updated[idx].imageUrl !== task.result) {
+              updated[idx] = { id: task.id, imageUrl: task.result! };
+              changed = true;
+            }
+          } else {
+            updated.push({ id: task.id, imageUrl: task.result! });
             changed = true;
           }
-        } else {
-          updated.push({ id: task.id, imageUrl: task.result! });
-          changed = true;
         }
-      }
-      return changed ? updated : prev;
+        return changed ? updated : prev;
+      });
     });
+
+    return () => cancelAnimationFrame(rafId);
   }, [tasks]);
 
   const handleSceneChange = useCallback((files: UploadedFile[]) => {
@@ -285,7 +295,6 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     imageSize,
     startBatch,
     clearTasks,
-    supabase,
   ]);
 
   const handleRetryStylePreprocess = useCallback(async () => {

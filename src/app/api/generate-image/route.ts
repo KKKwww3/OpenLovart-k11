@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       accessToken = session?.access_token;
     }
 
-    const { prompt, referenceImage, productImage, mimeType, modelId, aspectRatio, imageSize } =
+    const { prompt, referenceImage, productImage, modelId, aspectRatio, imageSize } =
       await request.json();
 
     if (!prompt || typeof prompt !== "string") {

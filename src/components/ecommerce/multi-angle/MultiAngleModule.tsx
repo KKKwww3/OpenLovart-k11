@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback } from "react";
-import { Zap, RotateCcw } from "lucide-react";
+import { Zap } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { UploadZone, UploadedFile } from "../UploadZone";
 import { BatchProgress } from "../BatchProgress";
@@ -122,7 +122,7 @@ export function MultiAngleModule({
     }
 
     setIsProcessing(false);
-  }, [fileBase64, angleConfig, selectedPresets, selectedModel, supabase]);
+  }, [fileBase64, selectedPresets, selectedModel, supabase, isProcessing]);
 
   const handleCancel = useCallback(() => {
     setIsProcessing(false);

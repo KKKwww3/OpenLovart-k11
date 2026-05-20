@@ -15,7 +15,6 @@ interface CanvasElementItemProps {
   editingTextId: string | null;
   setEditingTextId: (id: string | null) => void;
   onElementChange: (id: string, newAttrs: Partial<CanvasElement>) => void;
-  onDelete: (id: string) => void;
   handleMouseDown: (
     e: React.MouseEvent,
     elementId: string | null,
@@ -32,24 +31,19 @@ interface CanvasElementItemProps {
   ) => void;
   elements: CanvasElement[];
   activeTool: string;
-  onConnectFlow?: (element: CanvasElement) => void;
 }
 
 export function CanvasElementItem({
   el,
-  scale,
-  pan,
   selectedIds,
   isDrawing,
   editingTextId,
   setEditingTextId,
   onElementChange,
-  onDelete,
   handleMouseDown,
   handleResizeStart,
   elements,
   activeTool,
-  onConnectFlow,
 }: CanvasElementItemProps) {
   return (
     <div

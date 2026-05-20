@@ -2,7 +2,7 @@ import React from "react";
 import { ContextToolbar } from "../ContextToolbar";
 import { useCanvasInteraction } from "./useCanvasInteraction";
 import { CanvasElementItem, renderPath } from "./renderElement";
-import type { CanvasAreaProps, CanvasElement } from "./types";
+import type { CanvasAreaProps } from "./types";
 
 export function CanvasArea({
   scale,
@@ -24,7 +24,6 @@ export function CanvasArea({
     isResizing,
     isPanning,
     isDrawing,
-    isSelecting,
     selectionBox,
     editingTextId,
     setEditingTextId,
@@ -33,7 +32,6 @@ export function CanvasArea({
     handleMouseDown,
     handleResizeStart,
     handleMouseMove,
-    handleMouseUp,
   } = useCanvasInteraction({
     scale,
     pan,
@@ -183,12 +181,10 @@ export function CanvasArea({
                 editingTextId={editingTextId}
                 setEditingTextId={setEditingTextId}
                 onElementChange={onElementChange}
-                onDelete={onDelete}
                 handleMouseDown={handleMouseDown}
                 handleResizeStart={handleResizeStart}
                 elements={elements}
                 activeTool={activeTool}
-                onConnectFlow={onConnectFlow}
               />
             ))}
         </div>

@@ -4,7 +4,6 @@ import React, { useState, useRef } from "react";
 import {
   X,
   Loader2,
-  Sparkles,
   Image as ImageIcon,
   ChevronDown,
   Zap,
