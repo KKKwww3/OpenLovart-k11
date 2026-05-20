@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { useBatchGeneration } from "@/hooks/useBatchGeneration";
@@ -54,6 +54,29 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     clearTasks,
     retryTask,
   } = useBatchGeneration(supabase);
+
+  useEffect(() => {
+    const completedTasks = tasks.filter(t => t.status === "completed" && t.result);
+    if (completedTasks.length === 0) return;
+
+    setResults(prev => {
+      const updated = [...prev];
+      let changed = false;
+      for (const task of completedTasks) {
+        const idx = updated.findIndex(r => r.id === task.id);
+        if (idx >= 0) {
+          if (updated[idx].imageUrl !== task.result) {
+            updated[idx] = { id: task.id, imageUrl: task.result! };
+            changed = true;
+          }
+        } else {
+          updated.push({ id: task.id, imageUrl: task.result! });
+          changed = true;
+        }
+      }
+      return changed ? updated : prev;
+    });
+  }, [tasks]);
 
   const handleSceneChange = useCallback((files: UploadedFile[]) => {
     setSceneFiles(files);
