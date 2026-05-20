@@ -19,6 +19,8 @@ export interface BatchGenerationOptions {
   tasks: Omit<BatchTask, "status" | "result" | "error" | "progress">[];
   modelId?: number;
   concurrency?: number;
+  aspectRatio?: string;
+  imageSize?: string;
   onTaskComplete?: (taskId: string, result: string) => void;
   onTaskError?: (taskId: string, error: string) => void;
   onAllComplete?: (results: BatchTask[]) => void;
@@ -77,7 +79,7 @@ export function useBatchGeneration(
       : 0;
 
   const processTask = useCallback(
-    async (task: BatchTask, modelId?: number): Promise<BatchTask> => {
+    async (task: BatchTask, modelId?: number, aspectRatio?: string, imageSize?: string): Promise<BatchTask> => {
       try {
         setTasks((prev) =>
           prev.map((t) =>
@@ -124,6 +126,8 @@ export function useBatchGeneration(
                 referenceImage: referenceImageUrl,
                 productImage: productImageUrl,
                 modelId,
+                aspectRatio,
+                imageSize,
               },
               {
                 onStatus: (stage, message) => {
@@ -223,7 +227,7 @@ export function useBatchGeneration(
           const task = queue.shift();
           if (!task) break;
 
-          const result = await processTask(task, options.modelId);
+          const result = await processTask(task, options.modelId, options.aspectRatio, options.imageSize);
           results.push(result);
 
           if (result.status === "completed" && options.onTaskComplete) {
@@ -275,7 +279,9 @@ export function useBatchGeneration(
       );
 
       const modelId = currentOptionsRef.current?.modelId;
-      await processTask({ ...task, status: "pending", progress: 0 }, modelId);
+      const aspectRatio = currentOptionsRef.current?.aspectRatio;
+      const imageSize = currentOptionsRef.current?.imageSize;
+      await processTask({ ...task, status: "pending", progress: 0 }, modelId, aspectRatio, imageSize);
     },
     [tasks, processTask],
   );

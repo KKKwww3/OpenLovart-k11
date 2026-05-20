@@ -20,6 +20,25 @@ export interface GenerateImageStreamCallbacks extends GenerateImageCallbacks {
   onError?: (error: string) => void;
 }
 
+export const ASPECT_RATIOS: Record<string, string> = {
+  "1:1": "1:1",
+  "2:3": "2:3",
+  "3:2": "3:2",
+  "3:4": "3:4",
+  "4:3": "4:3",
+  "4:5": "4:5",
+  "5:4": "5:4",
+  "9:16": "9:16",
+  "16:9": "16:9",
+  "21:9": "21:9",
+  "1:4": "1:4",
+  "4:1": "4:1",
+  "1:8": "1:8",
+  "8:1": "8:1",
+} as const;
+
+export const IMAGE_SIZES = ["0.5K", "1K", "2K", "4K"] as const;
+
 export interface GenerateVideoResponse {
   taskId: string;
   status: string;
@@ -80,14 +99,18 @@ export async function generateDesign(
   return data.suggestion;
 }
 
+export interface ImageGenerationOptions {
+  prompt: string;
+  referenceImage?: string;
+  productImage?: string;
+  mimeType?: string;
+  modelId?: number;
+  aspectRatio?: string;
+  imageSize?: string;
+}
+
 export async function generateImage(
-  options: {
-    prompt: string;
-    referenceImage?: string;
-    productImage?: string;
-    mimeType?: string;
-    modelId?: number;
-  },
+  options: ImageGenerationOptions,
   supabase?: SupabaseClient,
   callbacks?: GenerateImageCallbacks,
 ): Promise<GenerateImageResponse> {
@@ -219,13 +242,7 @@ export async function generateImage(
 }
 
 export async function generateImageStream(
-  options: {
-    prompt: string;
-    referenceImage?: string;
-    productImage?: string;
-    mimeType?: string;
-    modelId?: number;
-  },
+  options: ImageGenerationOptions,
   callbacks: GenerateImageStreamCallbacks,
   supabase?: SupabaseClient,
 ): Promise<void> {
@@ -386,6 +403,42 @@ export async function generateVideo(
   }
 
   return data;
+}
+
+export interface NB2RenderRequest {
+  sourceImage: string;   // base64
+  prompt: string;        // 角度提示词，如 "0° horizontal angle, 0° vertical angle, medium shot"
+}
+
+export interface NB2RenderResponse {
+  imageUrl: string;
+  prompt: string;
+}
+
+export async function nb2Render(
+  options: NB2RenderRequest,
+  supabase?: SupabaseClient,
+): Promise<NB2RenderResponse> {
+  const accessToken = await getAccessToken(supabase);
+
+  const headers: HeadersInit = { "Content-Type": "application/json" };
+  if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
+
+  const response = await fetch("/api/nb2-render", {
+    method: "POST",
+    headers,
+    body: JSON.stringify(options),
+  });
+
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    if (response.status === 401 || data.needsAuth) {
+      throw new Error("请先登录后再使用此功能");
+    }
+    throw new Error(data.error || data.details || "NB2 渲染失败");
+  }
+
+  return response.json();
 }
 
 export async function getVideoStatus(

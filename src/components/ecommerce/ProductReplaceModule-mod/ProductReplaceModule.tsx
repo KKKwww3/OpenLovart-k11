@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useRef } from "react";
-import { Zap } from "lucide-react";
+import { Zap, ChevronDown } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { UploadZone, UploadedFile } from "../UploadZone";
 import { BatchProgress } from "../BatchProgress";
@@ -10,6 +10,7 @@ import { ModelSelector } from "../ModelSelector";
 import { useBatchGeneration } from "@/hooks/useBatchGeneration";
 import { ProductReplacePrompt } from "./ProductReplacePrompt";
 import { v4 as uuidv4 } from "uuid";
+import { ASPECT_RATIOS, IMAGE_SIZES } from "@/lib/api";
 
 export interface ProductReplaceModuleProps {
   onAddToCanvas: (imageUrl: string, x?: number, y?: number) => void;
@@ -27,6 +28,10 @@ export function ProductReplaceModule({
   const [selectedModel, setSelectedModel] = useState<number | undefined>(
     undefined,
   );
+  const [aspectRatio, setAspectRatio] = useState("1:1");
+  const [imageSize, setImageSize] = useState("1K");
+  const [showAspectRatioMenu, setShowAspectRatioMenu] = useState(false);
+  const [showImageSizeMenu, setShowImageSizeMenu] = useState(false);
   const [results, setResults] = useState<ResultItem[]>([]);
 
   const {
@@ -70,6 +75,8 @@ export function ProductReplaceModule({
     await startBatch({
       tasks: tasksToCreate,
       modelId: selectedModel,
+      aspectRatio,
+      imageSize,
       concurrency: 2,
       onTaskComplete: (taskId, result) => {
         setResults((prev) => [...prev, { id: taskId, imageUrl: result }]);
@@ -80,6 +87,8 @@ export function ProductReplaceModule({
     sceneFiles,
     currentPrompt,
     selectedModel,
+    aspectRatio,
+    imageSize,
     startBatch,
     clearTasks,
   ]);
@@ -113,6 +122,78 @@ export function ProductReplaceModule({
         value={selectedModel}
         onChange={setSelectedModel}
       />
+
+      <div className="space-y-3">
+        <label className="text-sm font-medium text-gray-700">图片配置</label>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setShowAspectRatioMenu((v) => !v);
+                setShowImageSizeMenu(false);
+              }}
+              className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm hover:bg-gray-100 transition-colors"
+            >
+              <span className="text-gray-700">{aspectRatio}</span>
+              <ChevronDown size={14} className="text-gray-400" />
+            </button>
+            {showAspectRatioMenu && (
+              <div className="absolute top-full mt-1 left-0 right-0 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-10 max-h-48 overflow-y-auto">
+                {Object.keys(ASPECT_RATIOS).map((ratio) => (
+                  <div
+                    key={ratio}
+                    onClick={() => {
+                      setAspectRatio(ratio);
+                      setShowAspectRatioMenu(false);
+                    }}
+                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 ${
+                      aspectRatio === ratio
+                        ? "text-blue-600 font-medium"
+                        : "text-gray-700"
+                    }`}
+                  >
+                    {ratio}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => {
+                setShowImageSizeMenu((v) => !v);
+                setShowAspectRatioMenu(false);
+              }}
+              className="w-full flex items-center justify-between px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-sm hover:bg-gray-100 transition-colors"
+            >
+              <span className="text-gray-700">{imageSize}</span>
+              <ChevronDown size={14} className="text-gray-400" />
+            </button>
+            {showImageSizeMenu && (
+              <div className="absolute top-full mt-1 left-0 right-0 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-10">
+                {IMAGE_SIZES.map((size) => (
+                  <div
+                    key={size}
+                    onClick={() => {
+                      setImageSize(size);
+                      setShowImageSizeMenu(false);
+                    }}
+                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 ${
+                      imageSize === size
+                        ? "text-blue-600 font-medium"
+                        : "text-gray-700"
+                    }`}
+                  >
+                    {size}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       <div className="space-y-3">
         <label className="text-sm font-medium text-gray-700">场景图片</label>

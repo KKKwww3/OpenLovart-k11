@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       accessToken = session?.access_token;
     }
 
-    const { prompt, referenceImage, productImage, mimeType, modelId } =
+    const { prompt, referenceImage, productImage, mimeType, modelId, aspectRatio, imageSize } =
       await request.json();
 
     if (!prompt || typeof prompt !== "string") {
@@ -86,6 +86,8 @@ export async function POST(request: NextRequest) {
         referenceImage: referenceImage || null,
         productImage: productImage || null,
         model,
+        aspectRatio: aspectRatio || null,
+        imageSize: imageSize || null,
       }),
     });
 
