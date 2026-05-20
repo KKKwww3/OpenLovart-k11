@@ -3,14 +3,15 @@
 import React, { useState, useCallback } from "react";
 import { Zap, RotateCcw } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { UploadZone, UploadedFile } from "./UploadZone";
-import { BatchProgress } from "./BatchProgress";
+import { UploadZone, UploadedFile } from "../UploadZone";
+import { BatchProgress } from "../BatchProgress";
 import { BatchTask } from "@/hooks/useBatchGeneration";
-import { ResultPreview, ResultItem } from "./ResultPreview";
-import { AngleVectorControl, AngleConfig } from "./AngleVectorControl";
-import { ModelSelector } from "./ModelSelector";
+import { ResultPreview, ResultItem } from "../ResultPreview";
+import { AngleVectorControl, AngleConfig } from "../AngleVectorControl";
+import { ModelSelector } from "../ModelSelector";
 import { ANGLE_PRESETS } from "@/config/multi-angle";
 import { nb2Render } from "@/lib/api";
+import { uploadImageToImgbbBrowser } from "@/lib/imgbb-browser";
 import { v4 as uuidv4 } from "uuid";
 
 export interface MultiAngleModuleProps {
@@ -56,6 +57,13 @@ export function MultiAngleModule({
     setIsProcessing(true);
     setResults([]);
 
+    const imgbbResult = await uploadImageToImgbbBrowser(fileBase64);
+    if (!imgbbResult) {
+      setIsProcessing(false);
+      return;
+    }
+    const sourceImageUrl = imgbbResult.url;
+
     const initialTasks: BatchTask[] = selectedPresets.map((preset) => ({
       id: uuidv4(),
       status: "pending" as const,
@@ -80,7 +88,7 @@ export function MultiAngleModule({
       try {
         const result = await nb2Render(
           {
-            sourceImage: fileBase64,
+            sourceImage: sourceImageUrl,
             prompt: preset.prompt,
             modelId: selectedModel,
           },

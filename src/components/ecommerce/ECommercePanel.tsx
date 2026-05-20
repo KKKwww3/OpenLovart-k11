@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ProductReplaceModule } from "./ProductReplaceModule-mod/ProductReplaceModule";
-import { MultiAngleModule } from "./MultiAngleModule";
+import { MultiAngleModule } from "./multi-angle/MultiAngleModule";
 import { ModelGenerationModule } from "./ModelGenerationModule";
 import { CloseUpModule } from "./CloseUpModule";
 import { DetailTemplateModule } from "./DetailTemplateModule";

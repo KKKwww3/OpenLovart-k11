@@ -8,6 +8,60 @@ import {
 } from "../_shared/auth.ts";
 import { uploadImageToImgbb } from "../_shared/imgbb.ts";
 
+interface SseChunk {
+  content: string;
+  done: boolean;
+  imageData?: string;
+}
+
+function parseSseChunk(data: string): SseChunk | null {
+  try {
+    if (data === "[DONE]") return null;
+
+    const parsed = JSON.parse(data);
+    const choice = parsed.choices?.[0];
+    if (!choice) return null;
+
+    const delta = choice.delta || choice.message || {};
+
+    let content = "";
+    let imageData: string | undefined;
+
+    if (typeof delta.content === "string") {
+      content = delta.content;
+    } else if (Array.isArray(delta.content)) {
+      for (const part of delta.content) {
+        if (part.type === "text" && part.text) {
+          content += part.text;
+        } else if (part.type === "image_url" && part.image_url?.url) {
+          imageData = part.image_url.url;
+        } else if (part.type === "image" && part.image_url?.url) {
+          imageData = part.image_url.url;
+        } else if (part.inlineData) {
+          imageData = `data:${part.inlineData.mimeType || "image/png"};base64,${part.inlineData.data}`;
+        }
+      }
+    }
+
+    if (delta.images && Array.isArray(delta.images)) {
+      for (const img of delta.images) {
+        if (img.url && !imageData) imageData = img.url;
+        if (img.image_url?.url && !imageData) imageData = img.image_url.url;
+      }
+    }
+
+    const finishReason = choice.finish_reason;
+    const done =
+      finishReason === "stop" ||
+      finishReason === "length" ||
+      finishReason === "content_filter";
+
+    return { content, done, imageData };
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return createOptionsResponse();
 
@@ -31,7 +85,6 @@ Deno.serve(async (req) => {
 
     let model: string;
     if (modelId != null) {
-      // 用户指定了模型 ID，按 ID 查询
       const { data: modelData, error: modelError } = await supabase
         .from("ai_models")
         .select("value")
@@ -44,7 +97,6 @@ Deno.serve(async (req) => {
       }
       model = modelData.value;
     } else {
-      // 未指定 — 取第一个启用模型
       const { data: modelData, error: modelError } = await supabase
         .from("ai_models")
         .select("value")
@@ -59,7 +111,6 @@ Deno.serve(async (req) => {
       model = modelData.value;
     }
 
-    // 构造 OpenAI 兼容的 messages 格式
     const messages = [
       {
         role: "user" as const,
@@ -74,7 +125,7 @@ Deno.serve(async (req) => {
       model,
       messages,
       modalities: ["image", "text"],
-      stream: false,
+      stream: true,
     };
 
     const aiResponse = await fetch(`${apiBaseUrl}/chat/completions`, {
@@ -91,41 +142,65 @@ Deno.serve(async (req) => {
       return createErrorResponse(`AI error: ${errText.slice(0, 200)}`, 502);
     }
 
-    const aiData = await aiResponse.json();
-    const choice = aiData.choices?.[0];
-
-    if (!choice) {
-      return createErrorResponse("AI returned no choices", 502);
+    const aiBody = aiResponse.body;
+    if (!aiBody) {
+      return createErrorResponse("AI returned empty body", 502);
     }
 
-    // 从 response 中提取图片 base64
-    let resultBase64: string | undefined;
-    const messageContent = choice.message?.content;
+    // 流式解析 SSE 响应，提取图片数据
+    const reader = aiBody.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let imageData: string | null = null;
+    let textAccumulator = "";
 
-    if (typeof messageContent === "string") {
-      const base64Match = messageContent.match(
-        /data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/,
-      );
-      if (base64Match) resultBase64 = base64Match[0];
-    } else if (Array.isArray(messageContent)) {
-      for (const part of messageContent) {
-        if (part.type === "image_url" && part.image_url?.url) {
-          resultBase64 = part.image_url.url;
-          break;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith("data: ")) continue;
+
+        const rawData = trimmed.slice(6);
+        if (rawData === "[DONE]") continue;
+
+        const chunk = parseSseChunk(rawData);
+        if (!chunk) continue;
+
+        if (chunk.content) {
+          textAccumulator += chunk.content;
         }
-        if (part.inlineData) {
-          resultBase64 = `data:${part.inlineData.mimeType || "image/png"};base64,${part.inlineData.data}`;
-          break;
+
+        if (chunk.imageData && !imageData) {
+          imageData = chunk.imageData;
         }
       }
     }
 
-    if (!resultBase64) {
-      return createErrorResponse("AI returned no image data", 502);
+    // 如果流中没提取到，尝试从累计文本中正则提取
+    if (!imageData && textAccumulator) {
+      const base64Match = textAccumulator.match(
+        /data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/,
+      );
+      if (base64Match) {
+        imageData = base64Match[0];
+      }
     }
 
-    // 上传到 imgbb
-    const imgbbResult = await uploadImageToImgbb(resultBase64);
+    if (!imageData) {
+      const snippet = textAccumulator.slice(0, 200);
+      return createErrorResponse(
+        `AI returned no image data. Response text: ${snippet}`,
+        502,
+      );
+    }
+
+    const imgbbResult = await uploadImageToImgbb(imageData);
     if (!imgbbResult) {
       return createErrorResponse("Image upload failed", 500);
     }
