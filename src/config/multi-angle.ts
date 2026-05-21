@@ -5,66 +5,95 @@ export interface AnglePreset {
   description: string;
 }
 
-/** 多角度渲染预设 — 摄像机围绕产品空间中心环绕，产品本身完全保持不变 */
+export interface SourceAngleOption {
+  id: string;
+  name: string;
+  description: string;
+}
+
+/** 原图拍摄角度选项 — 用户选择输入图是从哪个角度拍的 */
+export const SOURCE_ANGLES: SourceAngleOption[] = [
+  { id: "left-45", name: "左前侧", description: "从左侧前方拍摄，左边比右边多" },
+  { id: "right-45", name: "右前侧", description: "从右侧前方拍摄，右边比左边多" },
+  { id: "front", name: "正前方", description: "从正前方平视拍摄" },
+  { id: "left", name: "纯左侧", description: "从正左方拍摄，只看到左侧面" },
+  { id: "right", name: "纯右侧", description: "从正右方拍摄，只看到右侧面" },
+  { id: "top-down", name: "正上方", description: "从上往下俯拍" },
+  { id: "front-left-up", name: "左前上", description: "从左前上方俯拍" },
+  { id: "front-right-up", name: "右前上", description: "从右前上方俯拍" },
+];
+
+function buildSourceAnglePrompt(sourceAngleId: string): string {
+  const source = SOURCE_ANGLES.find((a) => a.id === sourceAngleId);
+  if (!source) return "";
+  return `The input photo was taken from the "${source.name}" viewpoint — ${source.description}. Based on this source viewpoint, now generate what this exact same scene would look like when viewed from:\n\n`;
+}
+
+/** 生成完整提示词：原图角度描述 + 目标视角描述 */
+export function buildMultiAnglePrompt(sourceAngleId: string, targetPreset: AnglePreset): string {
+  return buildSourceAnglePrompt(sourceAngleId) + targetPreset.prompt;
+}
+
+/** 多角度渲染预设 — 纯目标视角描述（不含原图角度信息） */
 export const ANGLE_PRESETS: AnglePreset[] = [
   {
     id: "front",
     name: "正面平视",
-    prompt: `Imagine a camera positioned directly in front of the product at eye level, pointing at the product's center. The product itself remains completely identical — same shape, color, material, texture, brand markings, and every detail unchanged. Show the full front face with both left and right sides symmetrically visible. Medium shot, product centered in frame. Only the camera angle changes — the product is exactly the same as the input image, just viewed from straight on.`,
-    description: "标准产品主图",
+    prompt: `directly from the front at eye level. Show the full front view of the scene with symmetrical perspective. Keep the same subject, same background environment, same materials, colors, and lighting style — the only difference is the camera is now positioned straight in front. Infer and complete the front-facing details that are not visible in the input. Make it look like a real photograph taken from the front.`,
+    description: "标准正面视角",
   },
   {
     id: "right-45",
     name: "右侧45°",
-    prompt: `Imagine a camera orbiting 45 degrees to the right around the product's center point. The product itself remains completely identical — same shape, color, material, texture, brand markings, and every detail unchanged. The right side of the product and part of the front face are now visible. Medium shot composition. Only the camera position changes — the product is exactly the same as the input image, just viewed from a right-front angle.`,
+    prompt: `from the right-front, approximately 45 degrees to the right. The right side of the scene becomes more visible, while the left side recedes. Keep the same subject, same background environment, same materials, colors, and lighting style — the only difference is the camera angle. Infer and complete the right-side details that are hidden in the input. Make it look like a real photograph taken from the right-front.`,
     description: "展示右侧面",
   },
   {
     id: "right",
     name: "右侧90°",
-    prompt: `Imagine a camera orbiting 90 degrees to the right around the product's center point, now looking at the pure right side. The product itself remains completely identical — same shape, color, material, texture, brand markings, and every detail unchanged. Only the right side profile is visible, with the front face no longer in view. Medium shot composition. Only the camera position changes — the product is exactly the same as the input image, just viewed from the right side.`,
-    description: "纯右侧面展示",
+    prompt: `directly from the right side, a pure right-side profile view (90 degrees). The front of the scene is no longer visible. Keep the same subject, same background environment, same materials, colors, and lighting style — the only difference is the camera angle. Infer and complete the right-side details that are completely hidden in the input. Make it look like a real photograph taken from the right side.`,
+    description: "纯右侧面视角",
   },
   {
     id: "left-45",
     name: "左侧45°",
-    prompt: `Imagine a camera orbiting 45 degrees to the left around the product's center point. The product itself remains completely identical — same shape, color, material, texture, brand markings, and every detail unchanged. The left side of the product and part of the front face are now visible. Medium shot composition. Only the camera position changes — the product is exactly the same as the input image, just viewed from a left-front angle.`,
+    prompt: `from the left-front, approximately 45 degrees to the left. The left side of the scene becomes more visible, while the right side recedes. Keep the same subject, same background environment, same materials, colors, and lighting style — the only difference is the camera angle. Infer and complete the left-side details that are hidden in the input. Make it look like a real photograph taken from the left-front.`,
     description: "展示左侧面",
   },
   {
     id: "left",
     name: "左侧90°",
-    prompt: `Imagine a camera orbiting 90 degrees to the left around the product's center point, now looking at the pure left side. The product itself remains completely identical — same shape, color, material, texture, brand markings, and every detail unchanged. Only the left side profile is visible, with the front face no longer in view. Medium shot composition. Only the camera position changes — the product is exactly the same as the input image, just viewed from the left side.`,
-    description: "纯左侧面展示",
+    prompt: `directly from the left side, a pure left-side profile view (90 degrees). The front of the scene is no longer visible. Keep the same subject, same background environment, same materials, colors, and lighting style — the only difference is the camera angle. Infer and complete the left-side details that are completely hidden in the input. Make it look like a real photograph taken from the left side.`,
+    description: "纯左侧面视角",
   },
   {
     id: "back",
     name: "背面",
-    prompt: `Imagine a camera orbiting 180 degrees around the product's center point, now positioned behind the product. The product itself remains completely identical — same shape, color, material, texture, brand markings, and every detail unchanged. Show the rear surface and back details clearly. Medium shot composition. Only the camera position changes — the product is exactly the same as the input image, just viewed from behind.`,
-    description: "背面展示",
+    prompt: `from behind, looking at the rear of the scene (180 degrees opposite). The front is now behind the scene. Keep the same subject, same background environment, same materials, colors, and lighting style — the only difference is the camera angle. Infer and complete the back-side details, rear surfaces, and reversed background that are completely hidden in the input. Make it look like a real photograph taken from behind.`,
+    description: "背面视角",
   },
   {
     id: "top-down",
     name: "正俯视",
-    prompt: `Imagine a camera positioned directly above the product, looking straight down at its center point. The product itself remains completely identical — same shape, color, material, texture, brand markings, and every detail unchanged. Show the top surface, top edges, and overall silhouette from a bird's-eye perspective. Wide shot showing the full top view. Only the camera position changes — the product is exactly the same as the input image, just viewed from above.`,
-    description: "顶部俯瞰展示",
+    prompt: `directly from above, a bird's-eye view looking straight down. The ground plane fills the frame with the subject seen from the top. Keep the same subject, same background environment, same materials, colors, and lighting style — the only difference is the camera angle. Infer and complete the top surfaces, overhead layout, and ground details that are not visible in the input. Make it look like a real photograph taken from directly above.`,
+    description: "顶部俯瞰视角",
   },
   {
     id: "bottom-up",
     name: "正仰视",
-    prompt: `Imagine a camera positioned directly below the product, looking upward at its center point. The product itself remains completely identical — same shape, color, material, texture, brand markings, and every detail unchanged. Show the underside details and bottom edges from a low angle. Wide shot composition. Only the camera position changes — the product is exactly the same as the input image, just viewed from below.`,
-    description: "底部仰视展示",
+    prompt: `from below looking up, a low-angle upward view. The underside and bottom portions are prominent with the ceiling or sky in view. Keep the same subject, same background environment, same materials, colors, and lighting style — the only difference is the camera angle. Infer and complete the underside details, bottom edges, and surrounding environment that are not visible in the input. Make it look like a real photograph taken from below.`,
+    description: "底部仰视视角",
   },
   {
     id: "front-left-30-up",
     name: "左前侧30°仰拍",
-    prompt: `Imagine a camera positioned low and to the left-front of the product, looking upward at its center point. The product itself remains completely identical — same shape, color, material, texture, brand markings, and every detail unchanged. The left side and bottom portions are emphasized, giving a slightly dramatic upward view. Close-up shot. Only the camera position changes — the product is exactly the same as the input image, just viewed from a low left-front angle.`,
+    prompt: `from a low left-front angle looking upward. The lower-left portion of the scene is emphasized, giving a slightly dramatic upward perspective. Keep the same subject, same background environment, same materials, colors, and lighting style — the only difference is the camera angle. Infer and complete the underside and left-side details not visible in the input. Make it look like a real photograph taken from a low left-front angle.`,
     description: "低角度仰拍突出立体感",
   },
   {
     id: "right-30-down",
     name: "右前侧30°俯拍",
-    prompt: `Imagine a camera positioned high and to the right-front of the product, looking downward at its center point. The product itself remains completely identical — same shape, color, material, texture, brand markings, and every detail unchanged. The top surface and right side are prominently visible in this overhead perspective. High angle shot. Only the camera position changes — the product is exactly the same as the input image, just viewed from a high right-front angle.`,
+    prompt: `from a high right-front angle looking downward. The top surface and right side of the scene are prominent in this overhead perspective. Keep the same subject, same background environment, same materials, colors, and lighting style — the only difference is the camera angle. Infer and complete the top and right-side details not visible in the input. Make it look like a real photograph taken from a high right-front angle.`,
     description: "俯拍展示顶部和右侧",
   },
 ];

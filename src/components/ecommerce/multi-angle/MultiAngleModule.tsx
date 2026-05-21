@@ -9,7 +9,7 @@ import { BatchTask } from "@/hooks/useBatchGeneration";
 import { ResultPreview, ResultItem } from "../ResultPreview";
 import { AngleVectorControl, AngleConfig } from "../AngleVectorControl";
 import { ModelSelector } from "../ModelSelector";
-import { ANGLE_PRESETS } from "@/config/multi-angle";
+import { ANGLE_PRESETS, SOURCE_ANGLES, buildMultiAnglePrompt } from "@/config/multi-angle";
 import { nb2Render } from "@/lib/api";
 import { uploadImageToImgbbBrowser } from "@/lib/imgbb-browser";
 import { v4 as uuidv4 } from "uuid";
@@ -36,6 +36,7 @@ export function MultiAngleModule({
   const [results, setResults] = useState<ResultItem[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedModel, setSelectedModel] = useState<number | undefined>(undefined);
+  const [sourceAngle, setSourceAngle] = useState("left-45");
 
   const selectedPresets = getSelectedPresets(angleConfig.selectedIds);
   const overallProgress = tasks.length > 0
@@ -76,6 +77,7 @@ export function MultiAngleModule({
     for (let i = 0; i < selectedPresets.length; i++) {
       const task = initialTasks[i];
       const preset = selectedPresets[i];
+      const fullPrompt = buildMultiAnglePrompt(sourceAngle, preset);
 
       setTasks((prev) =>
         prev.map((t) =>
@@ -89,7 +91,7 @@ export function MultiAngleModule({
         const result = await nb2Render(
           {
             sourceImage: sourceImageUrl,
-            prompt: preset.prompt,
+            prompt: fullPrompt,
             modelId: selectedModel,
           },
           supabase,
@@ -122,7 +124,7 @@ export function MultiAngleModule({
     }
 
     setIsProcessing(false);
-  }, [fileBase64, selectedPresets, selectedModel, supabase, isProcessing]);
+  }, [fileBase64, selectedPresets, selectedModel, sourceAngle, supabase, isProcessing]);
 
   const handleCancel = useCallback(() => {
     setIsProcessing(false);
@@ -175,6 +177,26 @@ export function MultiAngleModule({
         value={selectedModel}
         onChange={setSelectedModel}
       />
+
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-gray-700">原图拍摄角度</label>
+        <p className="text-xs text-gray-500">选择当前上传图片是从哪个角度拍摄的</p>
+        <div className="flex flex-wrap gap-2">
+          {SOURCE_ANGLES.map((angle) => (
+            <button
+              key={angle.id}
+              onClick={() => setSourceAngle(angle.id)}
+              className={`px-3 py-1.5 text-xs rounded-lg border transition-all ${
+                sourceAngle === angle.id
+                  ? "border-gray-900 bg-gray-900 text-white"
+                  : "border-gray-200 bg-white text-gray-600 hover:border-gray-400"
+              }`}
+            >
+              {angle.name}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <AngleVectorControl
         value={angleConfig}

@@ -175,6 +175,9 @@ export function useProjectSave(params: UseProjectSaveParams) {
           setTitle((project as any).title);
         }
 
+        setCurrentProjectId(id);
+        console.log("Set currentProjectId to:", id);
+
         if (elementsResult.error) throw elementsResult.error;
 
         const canvasElements = elementsResult.data;
@@ -204,7 +207,7 @@ export function useProjectSave(params: UseProjectSaveParams) {
         setIsLoading(false);
       }
     },
-    [supabase, setTitle, setElements, setIsLoading],
+    [supabase, setTitle, setElements, setIsLoading, setCurrentProjectId],
   );
 
   useEffect(() => {
