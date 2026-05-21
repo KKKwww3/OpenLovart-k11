@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { ChevronDown, Cloud, CloudOff, Image as ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { v4 as uuidv4 } from "uuid";
 import { FloatingToolbar } from "@/components/lovart/FloatingToolbar";
 import { CanvasArea } from "@/components/lovart/CanvasArea";
 import { ImageGeneratorPanel } from "@/components/lovart/ImageGeneratorPanel";
@@ -139,6 +140,23 @@ function CanvasContent() {
     if (projectId && supabase && !hasLoadedRef.current) {
       hasLoadedRef.current = true;
       loadProject(projectId);
+    } else if (!projectId && supabase && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      const newProjectId = uuidv4();
+      (supabase as any)
+        .from("projects")
+        .insert({ id: newProjectId, title })
+        .then(({ error }: { error: any }) => {
+          if (error) {
+            console.error("Failed to create project:", error);
+            hasLoadedRef.current = false;
+          } else {
+            setCurrentProjectId(newProjectId);
+            window.history.pushState({}, "", `/lovart/canvas?id=${newProjectId}`);
+          }
+          setIsLoading(false);
+          isInitializedRef.current = true;
+        });
     } else if (!projectId) {
       setIsLoading(false);
       isInitializedRef.current = true;
