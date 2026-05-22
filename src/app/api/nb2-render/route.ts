@@ -5,6 +5,8 @@ const SUPABASE_URL =
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY =
   process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const EDGE_FUNCTIONS_BASE_URL =
+  process.env.NEXT_PUBLIC_EDGE_FUNCTIONS_URL;
 
 export async function POST(request: NextRequest) {
   try {
@@ -37,14 +39,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!SUPABASE_URL) {
+    if (!EDGE_FUNCTIONS_BASE_URL && !SUPABASE_URL) {
       return NextResponse.json(
-        { error: "SUPABASE_URL not configured" },
+        { error: "EDGE_FUNCTIONS_URL or SUPABASE_URL not configured" },
         { status: 500 },
       );
     }
 
-    const edgeUrl = `${SUPABASE_URL}/functions/v1/nb2-render`;
+    const edgeUrl = `${EDGE_FUNCTIONS_BASE_URL || SUPABASE_URL}/functions/v1/nb2-render`;
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",

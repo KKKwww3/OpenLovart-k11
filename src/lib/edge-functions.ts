@@ -3,12 +3,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const edgeFunctionsBaseUrl = process.env.NEXT_PUBLIC_EDGE_FUNCTIONS_URL;
 
 function getEdgeFunctionUrl(functionName: string): string {
-  if (!supabaseUrl) {
-    throw new Error("NEXT_PUBLIC_SUPABASE_URL is not configured");
+  const base = edgeFunctionsBaseUrl || supabaseUrl;
+  if (!base) {
+    throw new Error(
+      "NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_EDGE_FUNCTIONS_URL is not configured",
+    );
   }
-  return `${supabaseUrl}/functions/v1/${functionName}`;
+  return `${base}/functions/v1/${functionName}`;
 }
 
 async function getAccessToken(

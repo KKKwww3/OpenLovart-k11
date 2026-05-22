@@ -2,12 +2,17 @@ const SUPABASE_URL =
   process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY =
   process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const EDGE_FUNCTIONS_BASE_URL =
+  process.env.NEXT_PUBLIC_EDGE_FUNCTIONS_URL;
 
 function getEdgeFunctionUrl(functionName: string): string {
-  if (!SUPABASE_URL) {
-    throw new Error("SUPABASE_URL is not configured");
+  const base = EDGE_FUNCTIONS_BASE_URL || SUPABASE_URL;
+  if (!base) {
+    throw new Error(
+      "SUPABASE_URL or NEXT_PUBLIC_EDGE_FUNCTIONS_URL is not configured",
+    );
   }
-  return `${SUPABASE_URL}/functions/v1/${functionName}`;
+  return `${base}/functions/v1/${functionName}`;
 }
 
 async function invokeEdgeFunction<T>(

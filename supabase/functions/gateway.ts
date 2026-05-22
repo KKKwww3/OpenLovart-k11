@@ -38,7 +38,9 @@ async function loadFunctions() {
 async function main() {
   await loadFunctions();
 
-  Deno.serve(async (req) => {
+  const port = parseInt(Deno.env.get("PORT") || "8081", 10);
+
+  Deno.serve({ port }, async (req) => {
     if (req.method === "OPTIONS") {
       return new Response("ok", { headers: corsHeaders });
     }
