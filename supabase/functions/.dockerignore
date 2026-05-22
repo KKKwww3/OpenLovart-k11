@@ -8,5 +8,3 @@ docker-compose.yml
 Dockerfile
 README.md
 .dockerignore
-gateway.ts
-deno.json
