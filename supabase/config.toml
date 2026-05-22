@@ -377,8 +377,28 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
-# [edge_runtime.secrets]
-# secret_key = "env(SECRET_VALUE)"
+[edge_runtime.secrets]
+# AI 服务
+IMAGE_API_BASE_URL = "env(IMAGE_API_BASE_URL)"
+IMAGE_API_KEY = "env(IMAGE_API_KEY)"
+
+# 图床上传
+IMGBB_API_KEY = "env(IMGBB_API_KEY)"
+
+# OpenRouter 代理
+OPEN_ROUTER_API_KEY = "env(OPEN_ROUTER_API_KEY)"
+OPEN_ROUTER_BASE_URL = "env(OPEN_ROUTER_BASE_URL)"
+
+# 视频生成
+VIDEO_API_BASE_URL = "env(VIDEO_API_BASE_URL)"
+VIDEO_API_KEY = "env(VIDEO_API_KEY)"
+
+# xAI
+XAI_API_KEY = "env(XAI_API_KEY)"
+
+[functions]
+# Edge Functions 超时设置（秒），图片生成可能需要较长时间
+timeout_seconds = 600
 
 [analytics]
 enabled = true

@@ -63,7 +63,7 @@ function parseSseChunk(data: string): SseChunk | null {
   }
 }
 
-Deno.serve(async (req) => {
+export async function handleRequest(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return createOptionsResponse();
 
   try {
@@ -231,4 +231,8 @@ Deno.serve(async (req) => {
     }
     return createErrorResponse(msg, 500);
   }
-});
+}
+
+if (import.meta.main) {
+  Deno.serve(handleRequest);
+}

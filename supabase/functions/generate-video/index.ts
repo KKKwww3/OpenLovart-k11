@@ -6,7 +6,7 @@ import {
   requireAuth,
 } from "../_shared/auth.ts";
 
-Deno.serve(async (req) => {
+export async function handleRequest(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") {
     return createOptionsResponse();
   }
@@ -79,4 +79,8 @@ Deno.serve(async (req) => {
       500,
     );
   }
-});
+}
+
+if (import.meta.main) {
+  Deno.serve(handleRequest);
+}

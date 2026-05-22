@@ -6,7 +6,9 @@
 
 ### 跳过 JWT 验证 + 指定环境变量文件
 
-supabase functions serve --no-verify-jwt --env-file supabase/functions/.env
+### supabase functions serve --no-verify-jwt --env-file supabase/functions/.env
+
+### npx supabase functions deploy generate-design generate-image generate-video nb2-render style-preprocess video-status
 
 ```bash
 # 设置 X.AI API Key (用于 generate-design)

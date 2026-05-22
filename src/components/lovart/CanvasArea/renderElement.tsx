@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { CanvasElement } from "./types";
 
 export function renderPath(points: { x: number; y: number }[]) {
@@ -45,6 +46,12 @@ export function CanvasElementItem({
   elements,
   activeTool,
 }: CanvasElementItemProps) {
+  const [imageLoading, setImageLoading] = useState(true);
+
+  useEffect(() => {
+    setImageLoading(true);
+  }, [el.content]);
+
   return (
     <div
       className={`absolute group ${selectedIds.includes(el.id) ? "z-10" : ""}`}
@@ -154,11 +161,16 @@ export function CanvasElementItem({
       )}
 
       {el.type === "image" && el.content && (
-        <img
-          src={el.content}
-          alt="Upload"
-          className="w-full h-full object-cover pointer-events-none select-none rounded-lg"
-        />
+        <>
+          {imageLoading && <Skeleton className="absolute inset-0 rounded-lg" />}
+          <img
+            src={el.content}
+            alt="Upload"
+            className={`w-full h-full object-cover pointer-events-none select-none rounded-lg ${imageLoading ? "invisible" : ""}`}
+            onLoad={() => setImageLoading(false)}
+            onError={() => setImageLoading(false)}
+          />
+        </>
       )}
 
       {el.type === "video" && el.content && (

@@ -17,7 +17,7 @@ interface StylePreprocessRequest {
   similarity: number;
   keepItems: string[];
   changeItems: string[];
-  model?: string;
+  model: string;
 }
 
 function buildStylePrompt(config: StylePreprocessRequest): string {
@@ -44,7 +44,7 @@ function buildStylePrompt(config: StylePreprocessRequest): string {
   return lines.join("\n");
 }
 
-Deno.serve(async (req) => {
+export async function handleRequest(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") {
     return createOptionsResponse();
   }
@@ -70,13 +70,8 @@ Deno.serve(async (req) => {
       return createErrorResponse("IMAGE_API_KEY not configured", 500);
     }
 
-    const actualModel = model || Deno.env.get("IMAGE_API_MODEL");
-
-    if (!actualModel) {
-      return createErrorResponse(
-        "IMAGE_API_MODEL not configured and no model provided in request",
-        500,
-      );
+    if (!model || typeof model !== "string") {
+      return createErrorResponse("model is required", 400);
     }
 
     const stylePrompt = buildStylePrompt({
@@ -138,7 +133,7 @@ Deno.serve(async (req) => {
         }, 15_000);
 
         const requestBody: Record<string, unknown> = {
-          model: actualModel,
+          model,
           messages,
           modalities: ["image", "text"],
           stream: true,
@@ -342,4 +337,8 @@ Deno.serve(async (req) => {
       500,
     );
   }
-});
+}
+
+if (import.meta.main) {
+  Deno.serve(handleRequest);
+}

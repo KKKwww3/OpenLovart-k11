@@ -7,7 +7,7 @@ import {
 } from "../_shared/auth.ts";
 import OpenAI from "https://esm.sh/openai@4";
 
-Deno.serve(async (req) => {
+export async function handleRequest(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") {
     return createOptionsResponse();
   }
@@ -71,4 +71,8 @@ Deno.serve(async (req) => {
       500,
     );
   }
-});
+}
+
+if (import.meta.main) {
+  Deno.serve(handleRequest);
+}
