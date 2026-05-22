@@ -396,10 +396,6 @@ VIDEO_API_KEY = "env(VIDEO_API_KEY)"
 # xAI
 XAI_API_KEY = "env(XAI_API_KEY)"
 
-[functions]
-# Edge Functions 超时设置（秒），图片生成可能需要较长时间
-timeout_seconds = 600
-
 [analytics]
 enabled = true
 port = 54327
