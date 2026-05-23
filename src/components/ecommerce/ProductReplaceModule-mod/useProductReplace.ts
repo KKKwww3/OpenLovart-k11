@@ -19,6 +19,10 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
   const [sceneFiles, setSceneFiles] = useState<UploadedFile[]>([]);
   const [productFiles, setProductFiles] = useState<UploadedFile[]>([]);
   const productFileMapRef = useRef<Map<string, File>>(new Map());
+  const [materialFiles, setMaterialFiles] = useState<UploadedFile[]>([]);
+  const materialFileMapRef = useRef<Map<string, File>>(new Map());
+  const [edgeFiles, setEdgeFiles] = useState<UploadedFile[]>([]);
+  const edgeFileMapRef = useRef<Map<string, File>>(new Map());
   const [currentPrompt, setCurrentPrompt] = useState("");
   const [selectedModel, setSelectedModel] = useState<number | undefined>(undefined);
   const [aspectRatio, setAspectRatio] = useState("1:1");
@@ -105,6 +109,28 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     setProductFiles(files);
   }, []);
 
+  const handleMaterialChange = useCallback((files: UploadedFile[]) => {
+    files.forEach((f) => {
+      if (f.file) {
+        materialFileMapRef.current.set(f.id, f.file);
+      } else {
+        materialFileMapRef.current.delete(f.id);
+      }
+    });
+    setMaterialFiles(files);
+  }, []);
+
+  const handleEdgeChange = useCallback((files: UploadedFile[]) => {
+    files.forEach((f) => {
+      if (f.file) {
+        edgeFileMapRef.current.set(f.id, f.file);
+      } else {
+        edgeFileMapRef.current.delete(f.id);
+      }
+    });
+    setEdgeFiles(files);
+  }, []);
+
   const handleModeChange = useCallback((newMode: ModeType) => {
     setMode(newMode);
     setSceneFiles([]);
@@ -133,6 +159,17 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
   const needsStylePreprocess = useCallback(() => {
     return similarity < 100 || keepItems.trim() !== "" || changeItems.trim() !== "";
   }, [similarity, keepItems, changeItems]);
+
+  const buildPrompt = useCallback(() => {
+    let prompt = currentPrompt;
+    if (materialFiles.length > 0) {
+      prompt += "\n请参考产品材质图，还原产品的真实材质纹理。";
+    }
+    if (edgeFiles.length > 0) {
+      prompt += "\n请参考锁边图，还原产品边缘的锁边样式。";
+    }
+    return prompt;
+  }, [currentPrompt, materialFiles, edgeFiles]);
 
   const doStylePreprocess = useCallback(async (sceneImageUrl: string): Promise<string | null> => {
     const keepItemsArray = keepItems.split(",").map((s) => s.trim()).filter(Boolean);
@@ -209,9 +246,11 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
 
       const tasksToCreate = productFiles.map((pf) => ({
         id: uuidv4(),
-        prompt: currentPrompt,
+        prompt: buildPrompt(),
         referenceImage: sceneImageUrl,
         productImage: productFileMapRef.current.get(pf.id),
+        materialImage: materialFileMapRef.current.get(materialFiles[0]?.id),
+        edgeImage: edgeFileMapRef.current.get(edgeFiles[0]?.id),
       }));
 
       await startBatch({
@@ -233,7 +272,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
       setStyleStepStatus("processing");
       setStyleStepMessage("正在处理多场景图...");
 
-      const allTasks: Array<{ id: string; prompt: string; referenceImage: string; productImage?: File }> = [];
+      const allTasks: Array<{ id: string; prompt: string; referenceImage: string; productImage?: File; materialImage?: File; edgeImage?: File }> = [];
 
       for (const sceneItem of sceneItems) {
         if (!sceneItem.file?.file) continue;
@@ -252,9 +291,11 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
         for (const pf of productFiles) {
           allTasks.push({
             id: uuidv4(),
-            prompt: currentPrompt,
+            prompt: buildPrompt(),
             referenceImage: sceneImageUrl,
             productImage: productFileMapRef.current.get(pf.id),
+            materialImage: materialFileMapRef.current.get(materialFiles[0]?.id),
+            edgeImage: edgeFileMapRef.current.get(edgeFiles[0]?.id),
           });
         }
       }
@@ -287,7 +328,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     productFiles,
     sceneFiles,
     sceneItems,
-    currentPrompt,
+    buildPrompt,
     needsStylePreprocess,
     doStylePreprocess,
     selectedModel,
@@ -308,9 +349,11 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     if (processedUrl) {
       const tasksToCreate = productFiles.map((pf) => ({
         id: uuidv4(),
-        prompt: currentPrompt,
+        prompt: buildPrompt(),
         referenceImage: processedUrl,
         productImage: productFileMapRef.current.get(pf.id),
+        materialImage: materialFileMapRef.current.get(materialFiles[0]?.id),
+        edgeImage: edgeFileMapRef.current.get(edgeFiles[0]?.id),
       }));
 
       await startBatch({
@@ -328,7 +371,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     originalSceneUrl,
     doStylePreprocess,
     productFiles,
-    currentPrompt,
+    buildPrompt,
     selectedModel,
     aspectRatio,
     imageSize,
@@ -374,6 +417,8 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     // State
     sceneFiles,
     productFiles,
+    materialFiles,
+    edgeFiles,
     currentPrompt,
     selectedModel,
     aspectRatio,
@@ -414,6 +459,8 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     // Handlers
     handleSceneChange,
     handleProductChange,
+    handleMaterialChange,
+    handleEdgeChange,
     handleModeChange,
     handleSceneItemsChange,
     handleGenerate,

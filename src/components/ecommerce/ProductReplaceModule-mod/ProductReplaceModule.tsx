@@ -8,6 +8,7 @@ import { ImageConfigPanel } from "./ImageConfigPanel";
 import { StyleConfigPanel } from "./StyleConfigPanel";
 import { SceneUploadPanel } from "./SceneUploadPanel";
 import { ProductUploadPanel } from "./ProductUploadPanel";
+import { ProductReferencePanel } from "./ProductReferencePanel";
 import { GenerationProgress } from "./GenerationProgress";
 import { ResultPreview } from "../ResultPreview";
 import { useProductReplace } from "./useProductReplace";
@@ -67,6 +68,13 @@ export function ProductReplaceModule({
       <ProductUploadPanel
         productFiles={ctx.productFiles}
         onChange={ctx.handleProductChange}
+      />
+
+      <ProductReferencePanel
+        materialFiles={ctx.materialFiles}
+        edgeFiles={ctx.edgeFiles}
+        onMaterialChange={ctx.handleMaterialChange}
+        onEdgeChange={ctx.handleEdgeChange}
       />
 
       <GenerationProgress

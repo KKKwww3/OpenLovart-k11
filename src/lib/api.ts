@@ -103,6 +103,8 @@ export interface ImageGenerationOptions {
   prompt: string;
   referenceImage?: string;
   productImage?: string;
+  materialImage?: string;
+  edgeImage?: string;
   mimeType?: string;
   modelId?: number;
   aspectRatio?: string;
