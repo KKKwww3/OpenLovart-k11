@@ -21,6 +21,8 @@ export async function handleRequest(req: Request): Promise<Response> {
       prompt,
       referenceImage,
       productImage,
+      materialImage,
+      edgeImage,
       model,
       aspectRatio,
       imageSize,
@@ -66,6 +68,12 @@ export async function handleRequest(req: Request): Promise<Response> {
     }
     if (productImage) {
       addImage(userContent, productImage);
+    }
+    if (materialImage) {
+      addImage(userContent, materialImage);
+    }
+    if (edgeImage) {
+      addImage(userContent, edgeImage);
     }
 
     const messages = [{ role: "user", content: userContent }];

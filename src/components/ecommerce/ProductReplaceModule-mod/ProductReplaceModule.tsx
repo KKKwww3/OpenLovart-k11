@@ -73,8 +73,21 @@ export function ProductReplaceModule({
       <ProductReferencePanel
         materialFiles={ctx.materialFiles}
         edgeFiles={ctx.edgeFiles}
+        productFiles={ctx.productFiles}
         onMaterialChange={ctx.handleMaterialChange}
         onEdgeChange={ctx.handleEdgeChange}
+        materialPreviewResult={ctx.materialPreviewResult}
+        isMaterialPreviewing={ctx.isMaterialPreviewing}
+        materialPreviewError={ctx.materialPreviewError}
+        edgePreviewResult={ctx.edgePreviewResult}
+        isEdgePreviewing={ctx.isEdgePreviewing}
+        edgePreviewError={ctx.edgePreviewError}
+        onMaterialPreview={ctx.handleMaterialPreview}
+        onMaterialPreviewConfirm={ctx.handleMaterialPreviewConfirm}
+        onMaterialPreviewRetry={ctx.handleMaterialPreviewRetry}
+        onEdgePreview={ctx.handleEdgePreview}
+        onEdgePreviewConfirm={ctx.handleEdgePreviewConfirm}
+        onEdgePreviewRetry={ctx.handleEdgePreviewRetry}
       />
 
       <GenerationProgress

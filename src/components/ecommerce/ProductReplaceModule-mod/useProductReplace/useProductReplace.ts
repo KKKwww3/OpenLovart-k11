@@ -6,9 +6,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { useBatchGeneration } from "@/hooks/useBatchGeneration";
 import { stylePreprocess } from "@/lib/stylePreprocess";
 import { uploadImageToImgbbBrowser } from "@/lib/imgbb-browser";
-import type { UploadedFile } from "../UploadZone";
-import type { ResultItem } from "../ResultPreview";
-import type { StepStatus, ModeType } from "./types";
+import type { UploadedFile } from "../../UploadZone";
+import type { ResultItem } from "../../ResultPreview";
+import type { StepStatus, ModeType } from "../types";
+import { MATERIAL_APPEND_PROMPT, EDGE_APPEND_PROMPT } from "./prompts";
+import { useFileHandlers } from "./useFileHandlers";
+import { usePreview } from "./usePreview";
+import { useCanvasActions } from "./useCanvasActions";
 
 export interface UseProductReplaceOptions {
   supabase?: SupabaseClient;
@@ -58,6 +62,36 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     retryTask,
   } = useBatchGeneration(supabase);
 
+  const fileHandlers = useFileHandlers({
+    setSceneFiles,
+    setProcessedSceneUrl,
+    setOriginalSceneUrl,
+    setStyleStepStatus,
+    setStyleStepError,
+    productFileMapRef,
+    setProductFiles,
+    materialFileMapRef,
+    setMaterialFiles,
+    edgeFileMapRef,
+    setEdgeFiles,
+    setMode,
+    setSceneItems,
+    setResults,
+    clearTasks,
+  });
+
+  const preview = usePreview({
+    productFileMapRef,
+    materialFileMapRef,
+    edgeFileMapRef,
+    selectedModel,
+    aspectRatio,
+    imageSize,
+    supabase,
+  });
+
+  const canvasActions = useCanvasActions({ onAddToCanvas, results });
+
   const syncedTaskIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -92,70 +126,6 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     return () => cancelAnimationFrame(rafId);
   }, [tasks]);
 
-  const handleSceneChange = useCallback((files: UploadedFile[]) => {
-    setSceneFiles(files);
-    setProcessedSceneUrl(null);
-    setOriginalSceneUrl(null);
-    setStyleStepStatus("idle");
-    setStyleStepError(null);
-  }, []);
-
-  const handleProductChange = useCallback((files: UploadedFile[]) => {
-    files.forEach((f) => {
-      if (f.file) {
-        productFileMapRef.current.set(f.id, f.file);
-      }
-    });
-    setProductFiles(files);
-  }, []);
-
-  const handleMaterialChange = useCallback((files: UploadedFile[]) => {
-    files.forEach((f) => {
-      if (f.file) {
-        materialFileMapRef.current.set(f.id, f.file);
-      } else {
-        materialFileMapRef.current.delete(f.id);
-      }
-    });
-    setMaterialFiles(files);
-  }, []);
-
-  const handleEdgeChange = useCallback((files: UploadedFile[]) => {
-    files.forEach((f) => {
-      if (f.file) {
-        edgeFileMapRef.current.set(f.id, f.file);
-      } else {
-        edgeFileMapRef.current.delete(f.id);
-      }
-    });
-    setEdgeFiles(files);
-  }, []);
-
-  const handleModeChange = useCallback((newMode: ModeType) => {
-    setMode(newMode);
-    setSceneFiles([]);
-    setSceneItems([]);
-    setProcessedSceneUrl(null);
-    setOriginalSceneUrl(null);
-    setStyleStepStatus("idle");
-    setStyleStepError(null);
-    setResults([]);
-    clearTasks();
-  }, [clearTasks]);
-
-  const handleSceneItemsChange = useCallback((items: Array<{
-    file: UploadedFile;
-    processedUrl: string | null;
-    styleStatus: StepStatus;
-  }>) => {
-    setSceneItems(items.map((item) => ({
-      ...item,
-      originalUrl: null,
-      styleMessage: "",
-      styleError: null,
-    })));
-  }, []);
-
   const needsStylePreprocess = useCallback(() => {
     return similarity < 100 || keepItems.trim() !== "" || changeItems.trim() !== "";
   }, [similarity, keepItems, changeItems]);
@@ -163,10 +133,10 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
   const buildPrompt = useCallback(() => {
     let prompt = currentPrompt;
     if (materialFiles.length > 0) {
-      prompt += "\n请参考产品材质图，还原产品的真实材质纹理。";
+      prompt += MATERIAL_APPEND_PROMPT;
     }
     if (edgeFiles.length > 0) {
-      prompt += "\n请参考锁边图，还原产品边缘的锁边样式。";
+      prompt += EDGE_APPEND_PROMPT;
     }
     return prompt;
   }, [currentPrompt, materialFiles, edgeFiles]);
@@ -206,6 +176,19 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     });
   }, [similarity, keepItems, changeItems, selectedModel, supabase]);
 
+  const buildTasks = useCallback(
+    (sceneImageUrl: string) =>
+      productFiles.map((pf) => ({
+        id: uuidv4(),
+        prompt: buildPrompt(),
+        referenceImage: sceneImageUrl,
+        productImage: productFileMapRef.current.get(pf.id),
+        materialImage: materialFileMapRef.current.get(materialFiles[0]?.id),
+        edgeImage: edgeFileMapRef.current.get(edgeFiles[0]?.id),
+      })),
+    [productFiles, buildPrompt],
+  );
+
   const handleGenerate = useCallback(async () => {
     if (productFiles.length === 0) return;
 
@@ -244,17 +227,8 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
         setStyleStepMessage("跳过风格预处理");
       }
 
-      const tasksToCreate = productFiles.map((pf) => ({
-        id: uuidv4(),
-        prompt: buildPrompt(),
-        referenceImage: sceneImageUrl,
-        productImage: productFileMapRef.current.get(pf.id),
-        materialImage: materialFileMapRef.current.get(materialFiles[0]?.id),
-        edgeImage: edgeFileMapRef.current.get(edgeFiles[0]?.id),
-      }));
-
       await startBatch({
-        tasks: tasksToCreate,
+        tasks: buildTasks(sceneImageUrl),
         modelId: selectedModel,
         aspectRatio,
         imageSize,
@@ -336,6 +310,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     imageSize,
     startBatch,
     clearTasks,
+    buildTasks,
   ]);
 
   const handleRetryStylePreprocess = useCallback(async () => {
@@ -347,17 +322,8 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
 
     const processedUrl = await doStylePreprocess(originalSceneUrl);
     if (processedUrl) {
-      const tasksToCreate = productFiles.map((pf) => ({
-        id: uuidv4(),
-        prompt: buildPrompt(),
-        referenceImage: processedUrl,
-        productImage: productFileMapRef.current.get(pf.id),
-        materialImage: materialFileMapRef.current.get(materialFiles[0]?.id),
-        edgeImage: edgeFileMapRef.current.get(edgeFiles[0]?.id),
-      }));
-
       await startBatch({
-        tasks: tasksToCreate,
+        tasks: buildTasks(processedUrl),
         modelId: selectedModel,
         aspectRatio,
         imageSize,
@@ -370,8 +336,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
   }, [
     originalSceneUrl,
     doStylePreprocess,
-    productFiles,
-    buildPrompt,
+    buildTasks,
     selectedModel,
     aspectRatio,
     imageSize,
@@ -387,21 +352,6 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     }
   }, [tasks, processedSceneUrl, originalSceneUrl, retryTask]);
 
-  const handleAddToCanvas = useCallback(
-    (result: ResultItem) => {
-      onAddToCanvas(result.imageUrl);
-    },
-    [onAddToCanvas],
-  );
-
-  const handleAddAllToCanvas = useCallback(() => {
-    results.forEach((result, index) => {
-      const offsetX = (index % 3) * 320;
-      const offsetY = Math.floor(index / 3) * 320;
-      onAddToCanvas(result.imageUrl, offsetX, offsetY);
-    });
-  }, [results, onAddToCanvas]);
-
   const hasSceneFile = mode === "single"
     ? sceneFiles.length > 0 && sceneFiles[0]?.file != null
     : sceneItems.length > 0;
@@ -414,7 +364,6 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     : sceneItems.length * productFiles.length;
 
   return {
-    // State
     sceneFiles,
     productFiles,
     materialFiles,
@@ -442,7 +391,6 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     hasFailedTasks,
     totalCount,
 
-    // Setters
     setCurrentPrompt,
     setSelectedModel,
     setAspectRatio,
@@ -456,18 +404,13 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     setStyleStepMessage,
     setStyleStepError,
 
-    // Handlers
-    handleSceneChange,
-    handleProductChange,
-    handleMaterialChange,
-    handleEdgeChange,
-    handleModeChange,
-    handleSceneItemsChange,
+    ...fileHandlers,
+    ...preview,
+    ...canvasActions,
+
     handleGenerate,
     handleRetryStylePreprocess,
     handleRetryProductReplace,
-    handleAddToCanvas,
-    handleAddAllToCanvas,
     clearTasks,
   };
 }

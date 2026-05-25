@@ -196,13 +196,15 @@ export function useProjectSave(params: UseProjectSaveParams) {
           setElements([]);
         }
       } catch (error: unknown) {
+        console.error("Failed to load project:", error);
+        if (error instanceof Error) {
+          console.error("  message:", error.message);
+          console.error("  stack:", error.stack);
+        }
         const err = error as Record<string, unknown>;
-        console.error("Failed to load project:", {
-          message: err?.message ?? String(error),
-          code: err?.code,
-          details: err?.details,
-          hint: err?.hint,
-        });
+        if (err.code || err.details || err.hint) {
+          console.error("  code:", err.code, "details:", err.details, "hint:", err.hint);
+        }
       } finally {
         setIsLoading(false);
       }
