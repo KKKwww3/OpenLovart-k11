@@ -10,17 +10,11 @@ interface ProductReferencePanelProps {
   materialPreviewResult: string | null;
   isMaterialPreviewing: boolean;
   materialPreviewError: string | null;
-  edgePreviewResult: string | null;
-  isEdgePreviewing: boolean;
-  edgePreviewError: string | null;
   onMaterialChange: (files: UploadedFile[]) => void;
   onEdgeChange: (files: UploadedFile[]) => void;
   onMaterialPreview: () => void;
   onMaterialPreviewConfirm: () => void;
   onMaterialPreviewRetry: () => void;
-  onEdgePreview: () => void;
-  onEdgePreviewConfirm: () => void;
-  onEdgePreviewRetry: () => void;
 }
 
 function PreviewButton({
@@ -121,17 +115,11 @@ export function ProductReferencePanel({
   materialPreviewResult,
   isMaterialPreviewing,
   materialPreviewError,
-  edgePreviewResult,
-  isEdgePreviewing,
-  edgePreviewError,
   onMaterialChange,
   onEdgeChange,
   onMaterialPreview,
   onMaterialPreviewConfirm,
   onMaterialPreviewRetry,
-  onEdgePreview,
-  onEdgePreviewConfirm,
-  onEdgePreviewRetry,
 }: ProductReferencePanelProps) {
   return (
     <div className="space-y-3">
@@ -146,20 +134,6 @@ export function ProductReferencePanel({
             onChange={onMaterialChange}
             placeholder="上传材质参考图"
           />
-          <PreviewButton
-            label="预览材质效果"
-            loadingLabel="生成材质预览..."
-            isPreviewing={isMaterialPreviewing}
-            disabled={materialFiles.length === 0 || productFiles.length === 0}
-            onPreview={onMaterialPreview}
-          />
-          <PreviewResult
-            imageUrl={materialPreviewResult}
-            error={materialPreviewError}
-            isPreviewing={isMaterialPreviewing}
-            onConfirm={onMaterialPreviewConfirm}
-            onRetry={onMaterialPreviewRetry}
-          />
         </div>
         <div className="space-y-1">
           <p className="text-xs text-gray-500 mb-1.5">产品锁边参考（可选）</p>
@@ -170,22 +144,22 @@ export function ProductReferencePanel({
             onChange={onEdgeChange}
             placeholder="上传锁边参考图"
           />
-          <PreviewButton
-            label="预览锁边效果"
-            loadingLabel="生成锁边预览..."
-            isPreviewing={isEdgePreviewing}
-            disabled={edgeFiles.length === 0 || productFiles.length === 0}
-            onPreview={onEdgePreview}
-          />
-          <PreviewResult
-            imageUrl={edgePreviewResult}
-            error={edgePreviewError}
-            isPreviewing={isEdgePreviewing}
-            onConfirm={onEdgePreviewConfirm}
-            onRetry={onEdgePreviewRetry}
-          />
         </div>
       </div>
+      <PreviewButton
+        label="预览材质 + 锁边效果"
+        loadingLabel="生成预览..."
+        isPreviewing={isMaterialPreviewing}
+        disabled={materialFiles.length === 0 || productFiles.length === 0}
+        onPreview={onMaterialPreview}
+      />
+      <PreviewResult
+        imageUrl={materialPreviewResult}
+        error={materialPreviewError}
+        isPreviewing={isMaterialPreviewing}
+        onConfirm={onMaterialPreviewConfirm}
+        onRetry={onMaterialPreviewRetry}
+      />
     </div>
   );
 }
