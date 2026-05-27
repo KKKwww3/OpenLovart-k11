@@ -8,6 +8,7 @@ interface ProductReferencePanelProps {
   materialFiles: UploadedFile[];
   edgeFiles: UploadedFile[];
   productFiles: UploadedFile[];
+  processedMaterialUrl: string | null;
   materialPreviewResult: string | null;
   isMaterialPreviewing: boolean;
   materialPreviewError: string | null;
@@ -125,6 +126,7 @@ export function ProductReferencePanel({
   materialFiles,
   edgeFiles,
   productFiles,
+  processedMaterialUrl,
   materialPreviewResult,
   isMaterialPreviewing,
   materialPreviewError,
@@ -166,6 +168,17 @@ export function ProductReferencePanel({
               if (materialPreviewResult) setFullPreview(materialPreviewResult);
             }}
           />
+          {processedMaterialUrl && !isMaterialPreviewing && (
+            <div className="mt-2">
+              <p className="text-xs text-gray-500 mb-1">预处理材质+锁边效果：</p>
+              <img
+                src={processedMaterialUrl}
+                alt="预处理材质效果"
+                className="w-full rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={(e) => { e.stopPropagation(); setFullPreview(processedMaterialUrl); }}
+              />
+            </div>
+          )}
         </div>
         <div className="space-y-1">
           <p className="text-xs text-gray-500 mb-1.5">产品锁边参考（可选）</p>

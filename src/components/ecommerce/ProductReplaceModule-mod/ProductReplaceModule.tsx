@@ -74,6 +74,7 @@ export function ProductReplaceModule({
         materialFiles={ctx.materialFiles}
         edgeFiles={ctx.edgeFiles}
         productFiles={ctx.productFiles}
+        processedMaterialUrl={ctx.processedMaterialUrl}
         onMaterialChange={ctx.handleMaterialChange}
         onEdgeChange={ctx.handleEdgeChange}
         materialPreviewResult={ctx.materialPreviewResult}

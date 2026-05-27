@@ -39,6 +39,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
   const [styleStepStatus, setStyleStepStatus] = useState<StepStatus>("idle");
   const [styleStepMessage, setStyleStepMessage] = useState("");
   const [processedSceneUrl, setProcessedSceneUrl] = useState<string | null>(null);
+  const [processedMaterialUrl, setProcessedMaterialUrl] = useState<string | null>(null);
   const [styleStepError, setStyleStepError] = useState<string | null>(null);
   const [originalSceneUrl, setOriginalSceneUrl] = useState<string | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
@@ -199,6 +200,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
       clearTasks();
       setStyleStepError(null);
       preprocessedMaterialUrlRef.current = null;
+      setProcessedMaterialUrl(null);
 
       setStyleStepStatus("processing");
       setStyleStepMessage("正在处理...");
@@ -239,6 +241,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
 
       if (hasMaterial && preprocessedMaterialUrl) {
         preprocessedMaterialUrlRef.current = preprocessedMaterialUrl;
+        setProcessedMaterialUrl(preprocessedMaterialUrl);
       }
 
       await startBatch({
@@ -258,6 +261,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
       clearTasks();
       setStyleStepError(null);
       preprocessedMaterialUrlRef.current = null;
+      setProcessedMaterialUrl(null);
       setStyleStepStatus("processing");
       setStyleStepMessage("正在处理多场景图...");
 
@@ -286,6 +290,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
 
       if (hasMaterial && preprocessedMaterialUrl) {
         preprocessedMaterialUrlRef.current = preprocessedMaterialUrl;
+        setProcessedMaterialUrl(preprocessedMaterialUrl);
       }
 
       const allTasks = [];
@@ -412,6 +417,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     styleStepMessage,
     styleStepError,
     processedSceneUrl,
+    processedMaterialUrl,
     previewImage,
     mode,
     sceneItems,
