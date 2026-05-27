@@ -21,6 +21,60 @@ export interface UsePreviewReturn {
   handleMaterialPreview: () => Promise<void>;
   handleMaterialPreviewConfirm: () => void;
   handleMaterialPreviewRetry: () => void;
+  preprocessMaterialImages: () => Promise<string | undefined>;
+}
+
+async function uploadAndGenerateMaterialPreview(
+  productFileMapRef: React.MutableRefObject<Map<string, File>>,
+  materialFileMapRef: React.MutableRefObject<Map<string, File>>,
+  edgeFileMapRef: React.MutableRefObject<Map<string, File>>,
+  selectedModel: number | undefined,
+  aspectRatio: string,
+  imageSize: string,
+  supabase?: SupabaseClient,
+): Promise<string> {
+  const productEntries = Array.from(productFileMapRef.current.values());
+  const materialEntries = Array.from(materialFileMapRef.current.values());
+  const edgeEntries = Array.from(edgeFileMapRef.current.values());
+  const productFile = productEntries[0];
+  const materialFile = materialEntries[0];
+  const edgeFile = edgeEntries[0];
+
+  if (!productFile || !materialFile) {
+    throw new Error("缺少产品图或材质图");
+  }
+
+  const productImageResult = await uploadImageToImgbbBrowser(productFile);
+  if (!productImageResult?.url) throw new Error("产品图上传失败");
+
+  const materialImageResult = await uploadImageToImgbbBrowser(materialFile);
+  if (!materialImageResult?.url) throw new Error("材质图上传失败");
+
+  let edgeImageUrl: string | undefined;
+  if (edgeFile) {
+    const edgeImageResult = await uploadImageToImgbbBrowser(edgeFile);
+    if (!edgeImageResult?.url) throw new Error("锁边图上传失败");
+    edgeImageUrl = edgeImageResult.url;
+  }
+
+  const result = await generateImage(
+    {
+      prompt: MATERIAL_PREVIEW_PROMPT,
+      productImage: productImageResult.url,
+      materialImage: materialImageResult.url,
+      edgeImage: edgeImageUrl,
+      modelId: selectedModel,
+      aspectRatio,
+      imageSize,
+    },
+    supabase,
+  );
+
+  if (!result.imageUrl) {
+    throw new Error(result.textResponse || "材质预处理未生成图片");
+  }
+
+  return result.imageUrl;
 }
 
 export function usePreview(params: UsePreviewParams): UsePreviewReturn {
@@ -33,52 +87,21 @@ export function usePreview(params: UsePreviewParams): UsePreviewReturn {
   >(null);
 
   const handleMaterialPreview = useCallback(async () => {
-    const productEntries = Array.from(
-      params.productFileMapRef.current.values(),
-    );
-    const materialEntries = Array.from(
-      params.materialFileMapRef.current.values(),
-    );
-    const edgeEntries = Array.from(params.edgeFileMapRef.current.values());
-    const productFile = productEntries[0];
-    const materialFile = materialEntries[0];
-    const edgeFile = edgeEntries[0];
-    if (!productFile || !materialFile) return;
-
     setIsMaterialPreviewing(true);
     setMaterialPreviewError(null);
     setMaterialPreviewResult(null);
 
     try {
-      const productImageResult = await uploadImageToImgbbBrowser(productFile);
-      if (!productImageResult?.url) throw new Error("产品图上传失败");
-
-      const materialImageResult = await uploadImageToImgbbBrowser(materialFile);
-      if (!materialImageResult?.url) throw new Error("材质图上传失败");
-
-      let edgeImageUrl: string | undefined;
-      if (edgeFile) {
-        const edgeImageResult = await uploadImageToImgbbBrowser(edgeFile);
-        if (!edgeImageResult?.url) throw new Error("锁边图上传失败");
-        edgeImageUrl = edgeImageResult.url;
-      }
-
-      const result = await generateImage(
-        {
-          prompt: MATERIAL_PREVIEW_PROMPT,
-          productImage: productImageResult.url,
-          materialImage: materialImageResult.url,
-          edgeImage: edgeImageUrl,
-          modelId: params.selectedModel,
-          aspectRatio: params.aspectRatio,
-          imageSize: params.imageSize,
-        },
+      const url = await uploadAndGenerateMaterialPreview(
+        params.productFileMapRef,
+        params.materialFileMapRef,
+        params.edgeFileMapRef,
+        params.selectedModel,
+        params.aspectRatio,
+        params.imageSize,
         params.supabase,
       );
-
-      if (!result.imageUrl)
-        throw new Error(result.textResponse || "未生成图片");
-      setMaterialPreviewResult(result.imageUrl);
+      setMaterialPreviewResult(url);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "材质预览失败";
       setMaterialPreviewError(msg);
@@ -95,6 +118,22 @@ export function usePreview(params: UsePreviewParams): UsePreviewReturn {
     handleMaterialPreview();
   }, [handleMaterialPreview]);
 
+  const preprocessMaterialImages = useCallback(async () => {
+    try {
+      return await uploadAndGenerateMaterialPreview(
+        params.productFileMapRef,
+        params.materialFileMapRef,
+        params.edgeFileMapRef,
+        params.selectedModel,
+        params.aspectRatio,
+        params.imageSize,
+        params.supabase,
+      );
+    } catch {
+      return undefined;
+    }
+  }, [params]);
+
   return {
     materialPreviewResult,
     isMaterialPreviewing,
@@ -102,5 +141,6 @@ export function usePreview(params: UsePreviewParams): UsePreviewReturn {
     handleMaterialPreview,
     handleMaterialPreviewConfirm,
     handleMaterialPreviewRetry,
+    preprocessMaterialImages,
   };
 }

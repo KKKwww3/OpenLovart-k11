@@ -9,7 +9,7 @@ import { uploadImageToImgbbBrowser } from "@/lib/imgbb-browser";
 import type { UploadedFile } from "../../UploadZone";
 import type { ResultItem } from "../../ResultPreview";
 import type { StepStatus, ModeType } from "../types";
-import { MATERIAL_APPEND_PROMPT, EDGE_APPEND_PROMPT } from "./prompts";
+import { COMBINED_APPEND_PROMPT } from "./prompts";
 import { useFileHandlers } from "./useFileHandlers";
 import { usePreview } from "./usePreview";
 import { useCanvasActions } from "./useCanvasActions";
@@ -133,13 +133,10 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
   const buildPrompt = useCallback(() => {
     let prompt = currentPrompt;
     if (materialFiles.length > 0) {
-      prompt += MATERIAL_APPEND_PROMPT;
-    }
-    if (edgeFiles.length > 0) {
-      prompt += EDGE_APPEND_PROMPT;
+      prompt += COMBINED_APPEND_PROMPT;
     }
     return prompt;
-  }, [currentPrompt, materialFiles, edgeFiles]);
+  }, [currentPrompt, materialFiles]);
 
   const doStylePreprocess = useCallback(async (sceneImageUrl: string): Promise<string | null> => {
     const keepItemsArray = keepItems.split(",").map((s) => s.trim()).filter(Boolean);
@@ -176,6 +173,8 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     });
   }, [similarity, keepItems, changeItems, selectedModel, supabase]);
 
+  const preprocessedMaterialUrlRef = useRef<string | null>(null);
+
   const buildTasks = useCallback(
     (sceneImageUrl: string) =>
       productFiles.map((pf) => ({
@@ -183,8 +182,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
         prompt: buildPrompt(),
         referenceImage: sceneImageUrl,
         productImage: productFileMapRef.current.get(pf.id),
-        materialImage: materialFileMapRef.current.get(materialFiles[0]?.id),
-        edgeImage: edgeFileMapRef.current.get(edgeFiles[0]?.id),
+        materialImage: preprocessedMaterialUrlRef.current || undefined,
       })),
     [productFiles, buildPrompt],
   );
@@ -200,31 +198,47 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
       setResults([]);
       clearTasks();
       setStyleStepError(null);
+      preprocessedMaterialUrlRef.current = null;
 
       setStyleStepStatus("processing");
-      setStyleStepMessage("正在上传场景图...");
+      setStyleStepMessage("正在处理...");
 
-      const uploadResult = await uploadImageToImgbbBrowser(sceneFile.file);
-      if (!uploadResult?.url) {
-        setStyleStepStatus("error");
-        setStyleStepError("场景图上传失败");
-        setStyleStepMessage("场景图上传失败，请重试");
-        return;
-      }
+      const hasMaterial = materialFiles.length > 0;
 
-      let sceneImageUrl = uploadResult.url;
-      setOriginalSceneUrl(sceneImageUrl);
+      const sceneFileObj = sceneFile.file;
 
-      if (needsStylePreprocess()) {
-        setStyleStepMessage("正在预处理场景图风格...");
-        const processedUrl = await doStylePreprocess(sceneImageUrl);
-        if (!processedUrl) {
-          return;
+      const processScene = async (): Promise<string | null> => {
+        const uploadResult = await uploadImageToImgbbBrowser(sceneFileObj);
+        if (!uploadResult?.url) {
+          setStyleStepStatus("error");
+          setStyleStepError("场景图上传失败");
+          setStyleStepMessage("场景图上传失败，请重试");
+          return null;
         }
-        sceneImageUrl = processedUrl;
-      } else {
-        setStyleStepStatus("done");
-        setStyleStepMessage("跳过风格预处理");
+
+        let url = uploadResult.url;
+        setOriginalSceneUrl(url);
+
+        if (needsStylePreprocess()) {
+          const processedUrl = await doStylePreprocess(url);
+          if (!processedUrl) return null;
+          url = processedUrl;
+        } else {
+          setStyleStepStatus("done");
+          setStyleStepMessage("跳过风格预处理");
+        }
+        return url;
+      };
+
+      const [sceneImageUrl, preprocessedMaterialUrl] = await Promise.all([
+        processScene(),
+        hasMaterial ? preview.preprocessMaterialImages() : Promise.resolve(undefined),
+      ]);
+
+      if (!sceneImageUrl) return;
+
+      if (hasMaterial && preprocessedMaterialUrl) {
+        preprocessedMaterialUrlRef.current = preprocessedMaterialUrl;
       }
 
       await startBatch({
@@ -243,33 +257,49 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
       setResults([]);
       clearTasks();
       setStyleStepError(null);
+      preprocessedMaterialUrlRef.current = null;
       setStyleStepStatus("processing");
       setStyleStepMessage("正在处理多场景图...");
 
-      const allTasks: Array<{ id: string; prompt: string; referenceImage: string; productImage?: File; materialImage?: File; edgeImage?: File }> = [];
+      const hasMaterial = materialFiles.length > 0;
+      const sceneUrlMap = new Map<string, string>();
 
-      for (const sceneItem of sceneItems) {
-        if (!sceneItem.file?.file) continue;
+      const processSceneItems = async (): Promise<void> => {
+        for (const sceneItem of sceneItems) {
+          if (!sceneItem.file?.file) continue;
 
-        let sceneImageUrl: string;
-
-        if (sceneItem.processedUrl) {
-          sceneImageUrl = sceneItem.processedUrl;
-        } else {
-          setStyleStepMessage(`正在上传场景图...`);
-          const uploadResult = await uploadImageToImgbbBrowser(sceneItem.file.file);
-          if (!uploadResult?.url) continue;
-          sceneImageUrl = uploadResult.url;
+          if (sceneItem.processedUrl) {
+            sceneUrlMap.set(sceneItem.file.id, sceneItem.processedUrl);
+          } else {
+            const uploadResult = await uploadImageToImgbbBrowser(sceneItem.file.file);
+            if (uploadResult?.url) {
+              sceneUrlMap.set(sceneItem.file.id, uploadResult.url);
+            }
+          }
         }
+      };
+
+      const [, preprocessedMaterialUrl] = await Promise.all([
+        processSceneItems(),
+        hasMaterial ? preview.preprocessMaterialImages() : Promise.resolve(undefined),
+      ]);
+
+      if (hasMaterial && preprocessedMaterialUrl) {
+        preprocessedMaterialUrlRef.current = preprocessedMaterialUrl;
+      }
+
+      const allTasks = [];
+      for (const sceneItem of sceneItems) {
+        const sceneUrl = sceneUrlMap.get(sceneItem.file.id);
+        if (!sceneUrl) continue;
 
         for (const pf of productFiles) {
           allTasks.push({
             id: uuidv4(),
             prompt: buildPrompt(),
-            referenceImage: sceneImageUrl,
+            referenceImage: sceneUrl,
             productImage: productFileMapRef.current.get(pf.id),
-            materialImage: materialFileMapRef.current.get(materialFiles[0]?.id),
-            edgeImage: edgeFileMapRef.current.get(edgeFiles[0]?.id),
+            materialImage: preprocessedMaterialUrlRef.current || undefined,
           });
         }
       }
@@ -302,6 +332,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     productFiles,
     sceneFiles,
     sceneItems,
+    materialFiles,
     buildPrompt,
     needsStylePreprocess,
     doStylePreprocess,
@@ -311,6 +342,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     startBatch,
     clearTasks,
     buildTasks,
+    preview,
   ]);
 
   const handleRetryStylePreprocess = useCallback(async () => {
