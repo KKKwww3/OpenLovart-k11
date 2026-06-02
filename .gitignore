@@ -46,3 +46,10 @@ next-env.d.ts
 
 supabase/.temp/
 deno.lock
+
+# python
+__pycache__/
+*.py[cod]
+*$py.class
+
+
