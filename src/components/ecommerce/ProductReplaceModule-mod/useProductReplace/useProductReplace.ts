@@ -8,8 +8,8 @@ import { stylePreprocess } from "@/lib/stylePreprocess";
 import { uploadImageToImgbbBrowser } from "@/lib/imgbb-browser";
 import type { UploadedFile } from "../../UploadZone";
 import type { ResultItem } from "../../ResultPreview";
-import type { StepStatus, ModeType } from "../types";
-import { COMBINED_APPEND_PROMPT } from "./prompts";
+import type { StepStatus, ModeType, WorkflowMode } from "../types";
+import { COMBINED_APPEND_PROMPT, APPLY_PROMPT } from "./prompts";
 import { useFileHandlers } from "./useFileHandlers";
 import { usePreview } from "./usePreview";
 import { useCanvasActions } from "./useCanvasActions";
@@ -27,6 +27,8 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
   const materialFileMapRef = useRef<Map<string, File>>(new Map());
   const [edgeFiles, setEdgeFiles] = useState<UploadedFile[]>([]);
   const edgeFileMapRef = useRef<Map<string, File>>(new Map());
+  const [designFiles, setDesignFiles] = useState<UploadedFile[]>([]);
+  const designFileMapRef = useRef<Map<string, File>>(new Map());
   const [currentPrompt, setCurrentPrompt] = useState("");
   const [selectedModel, setSelectedModel] = useState<number | undefined>(undefined);
   const [aspectRatio, setAspectRatio] = useState("1:1");
@@ -45,6 +47,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const [mode, setMode] = useState<ModeType>("single");
+  const [workflowMode, setWorkflowMode] = useState<WorkflowMode>("replace");
   const [sceneItems, setSceneItems] = useState<Array<{
     file: UploadedFile;
     processedUrl: string | null;
@@ -79,6 +82,9 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     setSceneItems,
     setResults,
     clearTasks,
+    designFileMapRef,
+    setDesignFiles,
+    setWorkflowMode,
   });
 
   const preview = usePreview({
@@ -128,16 +134,19 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
   }, [tasks]);
 
   const needsStylePreprocess = useCallback(() => {
-    return similarity < 100 || keepItems.trim() !== "" || changeItems.trim() !== "";
-  }, [similarity, keepItems, changeItems]);
+    return workflowMode === "replace" && (similarity < 100 || keepItems.trim() !== "" || changeItems.trim() !== "");
+  }, [similarity, keepItems, changeItems, workflowMode]);
 
   const buildPrompt = useCallback(() => {
+    if (workflowMode === "apply") {
+      return currentPrompt || APPLY_PROMPT;
+    }
     let prompt = currentPrompt;
     if (materialFiles.length > 0) {
       prompt += COMBINED_APPEND_PROMPT;
     }
     return prompt;
-  }, [currentPrompt, materialFiles]);
+  }, [currentPrompt, materialFiles, workflowMode]);
 
   const doStylePreprocess = useCallback(async (sceneImageUrl: string): Promise<string | null> => {
     const keepItemsArray = keepItems.split(",").map((s) => s.trim()).filter(Boolean);
@@ -176,7 +185,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
 
   const preprocessedMaterialUrlRef = useRef<string | null>(null);
 
-  const buildTasks = useCallback(
+  const buildReplaceTasks = useCallback(
     (sceneImageUrl: string) =>
       productFiles.map((pf) => ({
         id: uuidv4(),
@@ -188,11 +197,20 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     [productFiles, buildPrompt],
   );
 
-  const handleGenerate = useCallback(async () => {
-    if (productFiles.length === 0) return;
+  const buildApplyTasks = useCallback(
+    (sceneImageUrl: string) =>
+      designFiles.map((df) => ({
+        id: uuidv4(),
+        prompt: buildPrompt(),
+        referenceImage: sceneImageUrl,
+        productImage: designFileMapRef.current.get(df.id),
+      })),
+    [designFiles, buildPrompt],
+  );
 
-    if (mode === "single") {
-      if (sceneFiles.length === 0) return;
+  const handleGenerate = useCallback(async () => {
+    if (workflowMode === "apply") {
+      if (sceneFiles.length === 0 || designFiles.length === 0) return;
       const sceneFile = sceneFiles[0];
       if (!sceneFile?.file) return;
 
@@ -205,8 +223,6 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
       setStyleStepStatus("processing");
       setStyleStepMessage("正在处理...");
 
-      const hasMaterial = materialFiles.length > 0;
-
       const sceneFileObj = sceneFile.file;
 
       const processScene = async (): Promise<string | null> => {
@@ -218,34 +234,18 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
           return null;
         }
 
-        let url = uploadResult.url;
+        const url = uploadResult.url;
         setOriginalSceneUrl(url);
-
-        if (needsStylePreprocess()) {
-          const processedUrl = await doStylePreprocess(url);
-          if (!processedUrl) return null;
-          url = processedUrl;
-        } else {
-          setStyleStepStatus("done");
-          setStyleStepMessage("跳过风格预处理");
-        }
+        setStyleStepStatus("done");
+        setStyleStepMessage("场景图上传完成");
         return url;
       };
 
-      const [sceneImageUrl, preprocessedMaterialUrl] = await Promise.all([
-        processScene(),
-        hasMaterial ? preview.preprocessMaterialImages() : Promise.resolve(undefined),
-      ]);
-
+      const sceneImageUrl = await processScene();
       if (!sceneImageUrl) return;
 
-      if (hasMaterial && preprocessedMaterialUrl) {
-        preprocessedMaterialUrlRef.current = preprocessedMaterialUrl;
-        setProcessedMaterialUrl(preprocessedMaterialUrl);
-      }
-
       await startBatch({
-        tasks: buildTasks(sceneImageUrl),
+        tasks: buildApplyTasks(sceneImageUrl),
         modelId: selectedModel,
         aspectRatio,
         imageSize,
@@ -255,86 +255,155 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
         },
       });
     } else {
-      if (sceneItems.length === 0) return;
+      if (productFiles.length === 0) return;
 
-      setResults([]);
-      clearTasks();
-      setStyleStepError(null);
-      preprocessedMaterialUrlRef.current = null;
-      setProcessedMaterialUrl(null);
-      setStyleStepStatus("processing");
-      setStyleStepMessage("正在处理多场景图...");
+      if (mode === "single") {
+        if (sceneFiles.length === 0) return;
+        const sceneFile = sceneFiles[0];
+        if (!sceneFile?.file) return;
 
-      const hasMaterial = materialFiles.length > 0;
-      const sceneUrlMap = new Map<string, string>();
+        setResults([]);
+        clearTasks();
+        setStyleStepError(null);
+        preprocessedMaterialUrlRef.current = null;
+        setProcessedMaterialUrl(null);
 
-      const processSceneItems = async (): Promise<void> => {
-        for (const sceneItem of sceneItems) {
-          if (!sceneItem.file?.file) continue;
+        setStyleStepStatus("processing");
+        setStyleStepMessage("正在处理...");
 
-          if (sceneItem.processedUrl) {
-            sceneUrlMap.set(sceneItem.file.id, sceneItem.processedUrl);
+        const hasMaterial = materialFiles.length > 0;
+
+        const sceneFileObj = sceneFile.file;
+
+        const processScene = async (): Promise<string | null> => {
+          const uploadResult = await uploadImageToImgbbBrowser(sceneFileObj);
+          if (!uploadResult?.url) {
+            setStyleStepStatus("error");
+            setStyleStepError("场景图上传失败");
+            setStyleStepMessage("场景图上传失败，请重试");
+            return null;
+          }
+
+          let url = uploadResult.url;
+          setOriginalSceneUrl(url);
+
+          if (needsStylePreprocess()) {
+            const processedUrl = await doStylePreprocess(url);
+            if (!processedUrl) return null;
+            url = processedUrl;
           } else {
-            const uploadResult = await uploadImageToImgbbBrowser(sceneItem.file.file);
-            if (uploadResult?.url) {
-              sceneUrlMap.set(sceneItem.file.id, uploadResult.url);
+            setStyleStepStatus("done");
+            setStyleStepMessage("跳过风格预处理");
+          }
+          return url;
+        };
+
+        const [sceneImageUrl, preprocessedMaterialUrl] = await Promise.all([
+          processScene(),
+          hasMaterial ? preview.preprocessMaterialImages() : Promise.resolve(undefined),
+        ]);
+
+        if (!sceneImageUrl) return;
+
+        if (hasMaterial && preprocessedMaterialUrl) {
+          preprocessedMaterialUrlRef.current = preprocessedMaterialUrl;
+          setProcessedMaterialUrl(preprocessedMaterialUrl);
+        }
+
+        await startBatch({
+          tasks: buildReplaceTasks(sceneImageUrl),
+          modelId: selectedModel,
+          aspectRatio,
+          imageSize,
+          concurrency: 2,
+          onTaskComplete: (taskId, result) => {
+            setResults((prev) => [...prev, { id: taskId, imageUrl: result }]);
+          },
+        });
+      } else {
+        if (sceneItems.length === 0) return;
+
+        setResults([]);
+        clearTasks();
+        setStyleStepError(null);
+        preprocessedMaterialUrlRef.current = null;
+        setProcessedMaterialUrl(null);
+        setStyleStepStatus("processing");
+        setStyleStepMessage("正在处理多场景图...");
+
+        const hasMaterial = materialFiles.length > 0;
+        const sceneUrlMap = new Map<string, string>();
+
+        const processSceneItems = async (): Promise<void> => {
+          for (const sceneItem of sceneItems) {
+            if (!sceneItem.file?.file) continue;
+
+            if (sceneItem.processedUrl) {
+              sceneUrlMap.set(sceneItem.file.id, sceneItem.processedUrl);
+            } else {
+              const uploadResult = await uploadImageToImgbbBrowser(sceneItem.file.file);
+              if (uploadResult?.url) {
+                sceneUrlMap.set(sceneItem.file.id, uploadResult.url);
+              }
             }
           }
+        };
+
+        const [, preprocessedMaterialUrl] = await Promise.all([
+          processSceneItems(),
+          hasMaterial ? preview.preprocessMaterialImages() : Promise.resolve(undefined),
+        ]);
+
+        if (hasMaterial && preprocessedMaterialUrl) {
+          preprocessedMaterialUrlRef.current = preprocessedMaterialUrl;
+          setProcessedMaterialUrl(preprocessedMaterialUrl);
         }
-      };
 
-      const [, preprocessedMaterialUrl] = await Promise.all([
-        processSceneItems(),
-        hasMaterial ? preview.preprocessMaterialImages() : Promise.resolve(undefined),
-      ]);
+        const allTasks = [];
+        for (const sceneItem of sceneItems) {
+          const sceneUrl = sceneUrlMap.get(sceneItem.file.id);
+          if (!sceneUrl) continue;
 
-      if (hasMaterial && preprocessedMaterialUrl) {
-        preprocessedMaterialUrlRef.current = preprocessedMaterialUrl;
-        setProcessedMaterialUrl(preprocessedMaterialUrl);
-      }
-
-      const allTasks = [];
-      for (const sceneItem of sceneItems) {
-        const sceneUrl = sceneUrlMap.get(sceneItem.file.id);
-        if (!sceneUrl) continue;
-
-        for (const pf of productFiles) {
-          allTasks.push({
-            id: uuidv4(),
-            prompt: buildPrompt(),
-            referenceImage: sceneUrl,
-            productImage: productFileMapRef.current.get(pf.id),
-            materialImage: preprocessedMaterialUrlRef.current || undefined,
-          });
+          for (const pf of productFiles) {
+            allTasks.push({
+              id: uuidv4(),
+              prompt: buildPrompt(),
+              referenceImage: sceneUrl,
+              productImage: productFileMapRef.current.get(pf.id),
+              materialImage: preprocessedMaterialUrlRef.current || undefined,
+            });
+          }
         }
+
+        if (allTasks.length === 0) {
+          setStyleStepStatus("error");
+          setStyleStepError("没有可生成的任务");
+          setStyleStepMessage("没有可生成的任务");
+          return;
+        }
+
+        setStyleStepMessage(`正在批量生成 ${allTasks.length} 张图片...`);
+
+        await startBatch({
+          tasks: allTasks,
+          modelId: selectedModel,
+          aspectRatio,
+          imageSize,
+          concurrency: 2,
+          onTaskComplete: (taskId, result) => {
+            setResults((prev) => [...prev, { id: taskId, imageUrl: result }]);
+          },
+        });
+
+        setStyleStepStatus("done");
+        setStyleStepMessage("批量生成完成");
       }
-
-      if (allTasks.length === 0) {
-        setStyleStepStatus("error");
-        setStyleStepError("没有可生成的任务");
-        setStyleStepMessage("没有可生成的任务");
-        return;
-      }
-
-      setStyleStepMessage(`正在批量生成 ${allTasks.length} 张图片...`);
-
-      await startBatch({
-        tasks: allTasks,
-        modelId: selectedModel,
-        aspectRatio,
-        imageSize,
-        concurrency: 2,
-        onTaskComplete: (taskId, result) => {
-          setResults((prev) => [...prev, { id: taskId, imageUrl: result }]);
-        },
-      });
-
-      setStyleStepStatus("done");
-      setStyleStepMessage("批量生成完成");
     }
   }, [
+    workflowMode,
     mode,
     productFiles,
+    designFiles,
     sceneFiles,
     sceneItems,
     materialFiles,
@@ -346,7 +415,8 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     imageSize,
     startBatch,
     clearTasks,
-    buildTasks,
+    buildReplaceTasks,
+    buildApplyTasks,
     preview,
   ]);
 
@@ -360,7 +430,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     const processedUrl = await doStylePreprocess(originalSceneUrl);
     if (processedUrl) {
       await startBatch({
-        tasks: buildTasks(processedUrl),
+        tasks: buildReplaceTasks(processedUrl),
         modelId: selectedModel,
         aspectRatio,
         imageSize,
@@ -373,7 +443,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
   }, [
     originalSceneUrl,
     doStylePreprocess,
-    buildTasks,
+    buildReplaceTasks,
     selectedModel,
     aspectRatio,
     imageSize,
@@ -389,22 +459,29 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     }
   }, [tasks, processedSceneUrl, originalSceneUrl, retryTask]);
 
-  const hasSceneFile = mode === "single"
+  const hasSceneFile = workflowMode === "apply"
     ? sceneFiles.length > 0 && sceneFiles[0]?.file != null
-    : sceneItems.length > 0;
+    : mode === "single"
+      ? sceneFiles.length > 0 && sceneFiles[0]?.file != null
+      : sceneItems.length > 0;
+
+  const hasDesignFile = designFiles.length > 0;
 
   const isGenerating = styleStepStatus === "processing" || isProcessing;
   const hasFailedTasks = tasks.some((t) => t.status === "failed");
 
-  const totalCount = mode === "single"
-    ? productFiles.length
-    : sceneItems.length * productFiles.length;
+  const totalCount = workflowMode === "apply"
+    ? sceneFiles.length * designFiles.length
+    : mode === "single"
+      ? productFiles.length
+      : sceneItems.length * productFiles.length;
 
   return {
     sceneFiles,
     productFiles,
     materialFiles,
     edgeFiles,
+    designFiles,
     currentPrompt,
     selectedModel,
     aspectRatio,
@@ -420,11 +497,13 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     processedMaterialUrl,
     previewImage,
     mode,
+    workflowMode,
     sceneItems,
     tasks,
     isProcessing,
     overallProgress,
     hasSceneFile,
+    hasDesignFile,
     isGenerating,
     hasFailedTasks,
     totalCount,
@@ -450,5 +529,20 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     handleRetryStylePreprocess,
     handleRetryProductReplace,
     clearTasks,
+
+    toggleWorkflowMode: useCallback(() => {
+      const newMode: WorkflowMode = workflowMode === "apply" ? "replace" : "apply";
+      setWorkflowMode(newMode);
+      setSceneFiles([]);
+      setProductFiles([]);
+      setDesignFiles([]);
+      setSceneItems([]);
+      setProcessedSceneUrl(null);
+      setOriginalSceneUrl(null);
+      setStyleStepStatus("idle");
+      setStyleStepError(null);
+      setResults([]);
+      clearTasks();
+    }, [workflowMode, clearTasks]),
   };
 }

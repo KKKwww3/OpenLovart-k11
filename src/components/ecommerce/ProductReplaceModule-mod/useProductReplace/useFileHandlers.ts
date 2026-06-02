@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { UploadedFile } from "../../UploadZone";
 import type { ResultItem } from "../../ResultPreview";
-import type { StepStatus, ModeType } from "../types";
+import type { StepStatus, ModeType, WorkflowMode } from "../types";
 
 export interface UseFileHandlersParams {
   setSceneFiles: Dispatch<SetStateAction<UploadedFile[]>>;
@@ -31,6 +31,9 @@ export interface UseFileHandlersParams {
   >;
   setResults: Dispatch<SetStateAction<ResultItem[]>>;
   clearTasks: () => void;
+  designFileMapRef: React.MutableRefObject<Map<string, File>>;
+  setDesignFiles: Dispatch<SetStateAction<UploadedFile[]>>;
+  setWorkflowMode: Dispatch<SetStateAction<WorkflowMode>>;
 }
 
 export interface UseFileHandlersReturn {
@@ -46,6 +49,8 @@ export interface UseFileHandlersReturn {
       styleStatus: StepStatus;
     }>,
   ) => void;
+  handleDesignChange: (files: UploadedFile[]) => void;
+  handleWorkflowModeChange: (newMode: WorkflowMode) => void;
 }
 
 export function useFileHandlers(
@@ -137,6 +142,35 @@ export function useFileHandlers(
     [params],
   );
 
+  const handleDesignChange = useCallback(
+    (files: UploadedFile[]) => {
+      files.forEach((f) => {
+        if (f.file) {
+          params.designFileMapRef.current.set(f.id, f.file);
+        }
+      });
+      params.setDesignFiles(files);
+    },
+    [params],
+  );
+
+  const handleWorkflowModeChange = useCallback(
+    (newMode: WorkflowMode) => {
+      params.setWorkflowMode(newMode);
+      params.setSceneFiles([]);
+      params.setProductFiles([]);
+      params.setDesignFiles([]);
+      params.setSceneItems([]);
+      params.setProcessedSceneUrl(null);
+      params.setOriginalSceneUrl(null);
+      params.setStyleStepStatus("idle");
+      params.setStyleStepError(null);
+      params.setResults([]);
+      params.clearTasks();
+    },
+    [params],
+  );
+
   return {
     handleSceneChange,
     handleProductChange,
@@ -144,5 +178,7 @@ export function useFileHandlers(
     handleEdgeChange,
     handleModeChange,
     handleSceneItemsChange,
+    handleDesignChange,
+    handleWorkflowModeChange,
   };
 }
