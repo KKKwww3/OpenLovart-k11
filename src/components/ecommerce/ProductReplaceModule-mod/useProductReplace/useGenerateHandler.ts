@@ -144,15 +144,14 @@ export function useGenerateHandler(
         imageSize: params.imageSize,
         concurrency: 2,
         onAllComplete: (stage1Results) => {
-          // 收集阶段一所有成功结果
+          // 收集阶段一所有成功结果，用原始 index 映射到 designFiles
           composedResultsRef.current.clear();
-          stage1Results
-            .filter((t) => t.status === "completed" && t.result)
-            .forEach((t, index) => {
-              if (params.designFiles[index]) {
-                composedResultsRef.current.set(params.designFiles[index].id, t.result!);
-              }
-            });
+          for (let i = 0; i < stage1Results.length; i++) {
+            const t = stage1Results[i];
+            if (t.status === "completed" && t.result && params.designFiles[i]) {
+              composedResultsRef.current.set(params.designFiles[i].id, t.result);
+            }
+          }
         },
       });
 
@@ -300,8 +299,9 @@ export function useGenerateHandler(
         const sceneUrlMap = new Map<string, string>();
 
         const processSceneItems = async (): Promise<void> => {
-          for (const sceneItem of params.sceneItems) {
-            if (!sceneItem.file?.file) continue;
+          // 并发上传所有场景图
+          const uploads = params.sceneItems.map(async (sceneItem) => {
+            if (!sceneItem.file?.file) return;
 
             if (sceneItem.processedUrl) {
               sceneUrlMap.set(sceneItem.file.id, sceneItem.processedUrl);
@@ -311,7 +311,8 @@ export function useGenerateHandler(
                 sceneUrlMap.set(sceneItem.file.id, uploadResult.url);
               }
             }
-          }
+          });
+          await Promise.all(uploads);
         };
 
         const [, preprocessedMaterialUrl] = await Promise.all([

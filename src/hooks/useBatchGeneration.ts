@@ -89,40 +89,22 @@ export function useBatchGeneration(
           ),
         );
 
-        let referenceImageUrl: string | undefined;
-        let productImageUrl: string | undefined;
-        let materialImageUrl: string | undefined;
-        let designImageUrl: string | undefined;
+        setTasks((prev) =>
+          prev.map((t) =>
+            t.id === task.id
+              ? { ...t, status: "processing", progress: 8 }
+              : t,
+          ),
+        );
 
-        if (task.referenceImage) {
-          setTasks((prev) =>
-            prev.map((t) =>
-              t.id === task.id
-                ? { ...t, status: "processing", progress: 8 }
-                : t,
-            ),
-          );
-          referenceImageUrl = await uploadImageAndGetUrl(task.referenceImage);
-        }
-
-        if (task.productImage) {
-          setTasks((prev) =>
-            prev.map((t) =>
-              t.id === task.id
-                ? { ...t, status: "processing", progress: 10 }
-                : t,
-            ),
-          );
-          productImageUrl = await uploadImageAndGetUrl(task.productImage);
-        }
-
-        if (task.materialImage) {
-          materialImageUrl = await uploadImageAndGetUrl(task.materialImage);
-        }
-
-        if (task.designImage) {
-          designImageUrl = await uploadImageAndGetUrl(task.designImage);
-        }
+        // 并发上传所有图片，提高效率
+        const [referenceImageUrl, productImageUrl, materialImageUrl, designImageUrl] =
+          await Promise.all([
+            uploadImageAndGetUrl(task.referenceImage),
+            uploadImageAndGetUrl(task.productImage),
+            uploadImageAndGetUrl(task.materialImage),
+            uploadImageAndGetUrl(task.designImage),
+          ]);
 
         setTasks((prev) =>
           prev.map((t) =>
