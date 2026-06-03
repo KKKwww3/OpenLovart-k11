@@ -143,6 +143,7 @@ export function ProductReplaceModule({
         onRetryStylePreprocess={ctx.handleRetryStylePreprocess}
         onRetryProductReplace={ctx.handleRetryProductReplace}
         onCancelBatch={ctx.clearTasks}
+        onPreviewImage={ctx.setPreviewImage}
       />
 
       {ctx.results.length > 0 && (

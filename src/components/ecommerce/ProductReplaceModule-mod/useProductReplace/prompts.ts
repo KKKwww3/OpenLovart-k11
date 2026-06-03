@@ -6,7 +6,7 @@ export const MATERIAL_PREVIEW_PROMPT =
 
 // 阶段一：将设计图贴到产品白底图
 export const COMPOSE_PROMPT =
-  "【任务】将设计图的图案精准贴到地毯白底实物图上，生成一张完整的商用电商地毯产品图。\n\n【图1 - 白底实物图】提供地毯的准确材质质感（绒面、纤维密度、光泽度）和锁边工艺（锁边颜色、纹理、厚度），必须完全保留这些特征。\n【图2 - 设计图】仅提供图案和纹样，需要将其完整应用到白底实物图的毯面上。\n\n【要求】\n1. 地毯形状、大小、比例与白底实物图完全一致\n2. 材质质感和锁边效果与白底实物图完全一致\n3. 图案严格按照设计图还原，色彩、纹样 100% 匹配\n4. 图案自然融入毯面，纹理走向和透视正确\n5. 背景纯白色，无多余元素\n\n【画质】8K 超高清，商业产品摄影级画质，禁止图案模糊、走形或裁切";
+  "A professional, hyper-realistic, commercial-grade product photograph of a finished carpet. Synthetically merge input A (the perspective/material reference, image_0.png) and input B (the 2D pattern reference, image_1.png). Preserve the unique geometric shape, exact perspective angle, and tactile pile fiber texture of input A. Perspectively warp the entire pattern design from input B to perfectly align with the surface of input A. The pattern must not be a flat overlay but must be meticulously rendered as if woven into the fibers themselves (displacement mapped), ensuring the individual strands are coated by the pattern colors without losing their texture depth and soft-shadowing. The environmental lighting, depth of field, and left-right light gradient from input A must be maintained and applied consistently over the newly patterned surface. The carpet is presented against the deep, clean, black isolation background from input A. No text, logos, or artificial borders. Focus on maximizing the perceived textile realism for a high-end e-commerce look.";
 
 // 阶段二：将成品产品图替换到场景图中
 export const SCENE_REPLACE_PROMPT =

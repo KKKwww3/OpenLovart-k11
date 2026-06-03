@@ -23,6 +23,7 @@ export async function handleRequest(req: Request): Promise<Response> {
       productImage,
       materialImage,
       edgeImage,
+      designImage,
       model,
       aspectRatio,
       imageSize,
@@ -74,6 +75,9 @@ export async function handleRequest(req: Request): Promise<Response> {
     }
     if (edgeImage) {
       addImage(userContent, edgeImage);
+    }
+    if (designImage) {
+      addImage(userContent, designImage);
     }
 
     const messages = [{ role: "user", content: userContent }];
@@ -129,7 +133,7 @@ export async function handleRequest(req: Request): Promise<Response> {
         const requestBody: Record<string, unknown> = {
           model,
           messages,
-          modalities: ["image", "text"],
+          modalities: ["image"],
           stream: true,
         };
         if (Object.keys(imageConfig).length > 0) {

@@ -9,6 +9,7 @@ export interface BatchProgressProps {
   overallProgress: number;
   isProcessing: boolean;
   onCancel?: () => void;
+  onPreviewImage?: (url: string) => void;
 }
 
 export function BatchProgress({
@@ -16,6 +17,7 @@ export function BatchProgress({
   overallProgress,
   isProcessing,
   onCancel,
+  onPreviewImage,
 }: BatchProgressProps) {
   const completedCount = tasks.filter((t) => t.status === "completed").length;
   const failedCount = tasks.filter((t) => t.status === "failed").length;
@@ -78,7 +80,8 @@ export function BatchProgress({
               <img
                 src={task.result}
                 alt="结果"
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={() => onPreviewImage?.(task.result!)}
               />
             ) : (
               <div className="w-full h-full bg-gray-100 flex flex-col items-center justify-center gap-1">

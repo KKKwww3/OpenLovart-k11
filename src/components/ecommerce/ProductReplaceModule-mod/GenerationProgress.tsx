@@ -17,6 +17,7 @@ interface GenerationProgressProps {
   onRetryStylePreprocess: () => void;
   onRetryProductReplace: () => void;
   onCancelBatch: () => void;
+  onPreviewImage?: (url: string) => void;
 }
 
 export function GenerationProgress({
@@ -30,6 +31,7 @@ export function GenerationProgress({
   onRetryStylePreprocess,
   onRetryProductReplace,
   onCancelBatch,
+  onPreviewImage,
 }: GenerationProgressProps) {
   if (styleStepStatus === "idle" && tasks.length === 0) return null;
 
@@ -73,6 +75,7 @@ export function GenerationProgress({
           overallProgress={overallProgress}
           isProcessing={isProcessing}
           onCancel={onCancelBatch}
+          onPreviewImage={onPreviewImage}
         />
       )}
 
