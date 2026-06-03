@@ -27,6 +27,13 @@ export function ProductReplaceModule({
   const ctx = useProductReplace({ supabase, onAddToCanvas });
 
   const isApplyMode = ctx.workflowMode === "apply";
+  const isMaterialMode = ctx.workflowMode === "material";
+
+  const workflowTabs = [
+    { key: "replace", label: "产品替换", desc: "原流程" },
+    { key: "apply", label: "设计应用", desc: "场景+产品白底+设计" },
+    { key: "material", label: "材质参考", desc: "场景+产品白底+设计+材质" },
+  ] as const;
 
   return (
     <div className="space-y-4">
@@ -48,28 +55,27 @@ export function ProductReplaceModule({
         onImageSizeChange={ctx.setImageSize}
       />
 
-      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-        <div>
-          <p className="text-sm font-medium text-gray-700">工作流模式</p>
-          <p className="text-xs text-gray-400">
-            {isApplyMode ? "场景图 + 设计图直接应用" : "产品替换（原流程）"}
-          </p>
+      {/* 工作流模式 Tab 切换 */}
+      <div className="rounded-lg border border-gray-200 overflow-hidden">
+        <div className="flex bg-gray-50">
+          {workflowTabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => ctx.switchWorkflowMode(tab.key)}
+              className={`flex-1 py-2.5 px-3 text-center transition-colors ${
+                ctx.workflowMode === tab.key
+                  ? "bg-white border-t-2 border-gray-900"
+                  : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              <p className="text-sm font-medium">{tab.label}</p>
+              <p className="text-[10px] text-gray-400">{tab.desc}</p>
+            </button>
+          ))}
         </div>
-        <button
-          onClick={ctx.toggleWorkflowMode}
-          className={`relative w-12 h-6 rounded-full transition-colors ${
-            isApplyMode ? "bg-blue-500" : "bg-gray-300"
-          }`}
-        >
-          <div
-            className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-              isApplyMode ? "left-6" : "left-0.5"
-            }`}
-          />
-        </button>
       </div>
 
-      {!isApplyMode && (
+      {ctx.workflowMode === "replace" && (
         <StyleConfigPanel
           similarity={ctx.similarity}
           keepItems={ctx.keepItems}
@@ -80,14 +86,18 @@ export function ProductReplaceModule({
         />
       )}
 
-      {isApplyMode ? (
+      {isApplyMode || isMaterialMode ? (
         <DesignUploadPanel
           sceneFiles={ctx.sceneFiles}
+          productFiles={ctx.productFiles}
           designFiles={ctx.designFiles}
           processedSceneUrl={ctx.processedSceneUrl}
           onSceneChange={ctx.handleSceneChange}
+          onProductChange={ctx.handleProductChange}
           onDesignChange={ctx.handleDesignChange}
+          onMaterialRefChange={ctx.handleMaterialRefChange}
           onPreviewImage={ctx.setPreviewImage}
+          mode={ctx.workflowMode === "material" ? "material" : "apply"}
         />
       ) : (
         <>
@@ -148,15 +158,15 @@ export function ProductReplaceModule({
       <button
         onClick={ctx.handleGenerate}
         disabled={
-          (isApplyMode
-            ? ctx.sceneFiles.length === 0 || ctx.designFiles.length === 0
-            : ctx.productFiles.length === 0 || !ctx.hasSceneFile) ||
+          (ctx.workflowMode === "replace"
+            ? ctx.productFiles.length === 0 || !ctx.hasSceneFile
+            : !ctx.hasSceneFile || !ctx.hasProductFile || !ctx.hasDesignFile) ||
           ctx.isGenerating
         }
         className={`w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium transition-all ${
-          (isApplyMode
-            ? ctx.sceneFiles.length > 0 && ctx.designFiles.length > 0
-            : ctx.productFiles.length > 0 && ctx.hasSceneFile) && !ctx.isGenerating
+          (ctx.workflowMode === "replace"
+            ? ctx.productFiles.length > 0 && ctx.hasSceneFile
+            : ctx.hasSceneFile && ctx.hasProductFile && ctx.hasDesignFile) && !ctx.isGenerating
             ? "bg-gray-900 text-white hover:bg-gray-800"
             : "bg-gray-200 text-gray-400 cursor-not-allowed"
         }`}
@@ -165,9 +175,11 @@ export function ProductReplaceModule({
         <span>
           {ctx.isGenerating
             ? "生成中..."
-            : isApplyMode
+            : ctx.workflowMode === "replace"
+            ? `批量替换 (${ctx.totalCount}张)`
+            : ctx.workflowMode === "apply"
             ? `批量应用 (${ctx.totalCount}张)`
-            : `批量替换 (${ctx.totalCount}张)`}
+            : `批量生成 (${ctx.totalCount}张)`}
         </span>
       </button>
 

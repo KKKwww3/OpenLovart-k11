@@ -10,6 +10,7 @@ export interface BatchTask {
   referenceImage?: File | string;
   productImage?: File | string;
   materialImage?: File | string;
+  designImage?: File | string;
   result?: string;
   error?: string;
   progress: number;
@@ -91,6 +92,7 @@ export function useBatchGeneration(
         let referenceImageUrl: string | undefined;
         let productImageUrl: string | undefined;
         let materialImageUrl: string | undefined;
+        let designImageUrl: string | undefined;
 
         if (task.referenceImage) {
           setTasks((prev) =>
@@ -118,6 +120,10 @@ export function useBatchGeneration(
           materialImageUrl = await uploadImageAndGetUrl(task.materialImage);
         }
 
+        if (task.designImage) {
+          designImageUrl = await uploadImageAndGetUrl(task.designImage);
+        }
+
         setTasks((prev) =>
           prev.map((t) =>
             t.id === task.id ? { ...t, status: "processing", progress: 15 } : t,
@@ -132,6 +138,7 @@ export function useBatchGeneration(
                 referenceImage: referenceImageUrl,
                 productImage: productImageUrl,
                 materialImage: materialImageUrl,
+                designImage: designImageUrl,
                 modelId,
                 aspectRatio,
                 imageSize,

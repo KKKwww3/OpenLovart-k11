@@ -34,6 +34,7 @@ export interface UseFileHandlersParams {
   designFileMapRef: React.MutableRefObject<Map<string, File>>;
   setDesignFiles: Dispatch<SetStateAction<UploadedFile[]>>;
   setWorkflowMode: Dispatch<SetStateAction<WorkflowMode>>;
+  materialRefFileMapRef: React.MutableRefObject<Map<string, File>>;
 }
 
 export interface UseFileHandlersReturn {
@@ -51,6 +52,7 @@ export interface UseFileHandlersReturn {
   ) => void;
   handleDesignChange: (files: UploadedFile[]) => void;
   handleWorkflowModeChange: (newMode: WorkflowMode) => void;
+  handleMaterialRefChange: (designId: string, file: File | null) => void;
 }
 
 export function useFileHandlers(
@@ -171,6 +173,17 @@ export function useFileHandlers(
     [params],
   );
 
+  const handleMaterialRefChange = useCallback(
+    (designId: string, file: File | null) => {
+      if (file) {
+        params.materialRefFileMapRef.current.set(designId, file);
+      } else {
+        params.materialRefFileMapRef.current.delete(designId);
+      }
+    },
+    [params],
+  );
+
   return {
     handleSceneChange,
     handleProductChange,
@@ -180,5 +193,6 @@ export function useFileHandlers(
     handleSceneItemsChange,
     handleDesignChange,
     handleWorkflowModeChange,
+    handleMaterialRefChange,
   };
 }

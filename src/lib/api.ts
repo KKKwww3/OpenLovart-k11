@@ -105,6 +105,7 @@ export interface ImageGenerationOptions {
   productImage?: string;
   materialImage?: string;
   edgeImage?: string;
+  designImage?: string;
   mimeType?: string;
   modelId?: number;
   aspectRatio?: string;

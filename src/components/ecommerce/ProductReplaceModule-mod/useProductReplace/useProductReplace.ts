@@ -9,7 +9,7 @@ import { uploadImageToImgbbBrowser } from "@/lib/imgbb-browser";
 import type { UploadedFile } from "../../UploadZone";
 import type { ResultItem } from "../../ResultPreview";
 import type { StepStatus, ModeType, WorkflowMode } from "../types";
-import { COMBINED_APPEND_PROMPT, APPLY_PROMPT } from "./prompts";
+import { COMBINED_APPEND_PROMPT, APPLY_PROMPT, MATERIAL_REFERENCE_PROMPT } from "./prompts";
 import { useFileHandlers } from "./useFileHandlers";
 import { usePreview } from "./usePreview";
 import { useCanvasActions } from "./useCanvasActions";
@@ -29,6 +29,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
   const edgeFileMapRef = useRef<Map<string, File>>(new Map());
   const [designFiles, setDesignFiles] = useState<UploadedFile[]>([]);
   const designFileMapRef = useRef<Map<string, File>>(new Map());
+  const materialRefFileMapRef = useRef<Map<string, File>>(new Map());
   const [currentPrompt, setCurrentPrompt] = useState("");
   const [selectedModel, setSelectedModel] = useState<number | undefined>(undefined);
   const [aspectRatio, setAspectRatio] = useState("1:1");
@@ -85,6 +86,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     designFileMapRef,
     setDesignFiles,
     setWorkflowMode,
+    materialRefFileMapRef,
   });
 
   const preview = usePreview({
@@ -140,6 +142,9 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
   const buildPrompt = useCallback(() => {
     if (workflowMode === "apply") {
       return currentPrompt || APPLY_PROMPT;
+    }
+    if (workflowMode === "material") {
+      return currentPrompt || MATERIAL_REFERENCE_PROMPT;
     }
     let prompt = currentPrompt;
     if (materialFiles.length > 0) {
@@ -198,19 +203,79 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
   );
 
   const buildApplyTasks = useCallback(
-    (sceneImageUrl: string) =>
-      designFiles.map((df) => ({
+    (sceneImageUrl: string) => {
+      const productFile = productFiles[0];
+      return designFiles.map((df) => ({
         id: uuidv4(),
         prompt: buildPrompt(),
         referenceImage: sceneImageUrl,
-        productImage: designFileMapRef.current.get(df.id),
-      })),
-    [designFiles, buildPrompt],
+        productImage: productFile ? productFileMapRef.current.get(productFile.id) : undefined,
+        designImage: designFileMapRef.current.get(df.id),
+      }));
+    },
+    [designFiles, productFiles, buildPrompt],
+  );
+
+  const buildMaterialTasks = useCallback(
+    (sceneImageUrl: string) => {
+      const productFile = productFiles[0];
+      return designFiles.map((df) => ({
+        id: uuidv4(),
+        prompt: buildPrompt(),
+        referenceImage: sceneImageUrl,
+        productImage: productFile ? productFileMapRef.current.get(productFile.id) : undefined,
+        designImage: designFileMapRef.current.get(df.id),
+        materialImage: materialRefFileMapRef.current.get(df.id),
+      }));
+    },
+    [designFiles, productFiles, buildPrompt],
   );
 
   const handleGenerate = useCallback(async () => {
-    if (workflowMode === "apply") {
-      if (sceneFiles.length === 0 || designFiles.length === 0) return;
+    if (workflowMode === "material") {
+      if (sceneFiles.length === 0 || productFiles.length === 0 || designFiles.length === 0) return;
+      const sceneFile = sceneFiles[0];
+      if (!sceneFile?.file) return;
+
+      setResults([]);
+      clearTasks();
+      setStyleStepError(null);
+      setStyleStepStatus("processing");
+      setStyleStepMessage("正在处理...");
+
+      const sceneFileObj = sceneFile.file;
+
+      const processScene = async (): Promise<string | null> => {
+        const uploadResult = await uploadImageToImgbbBrowser(sceneFileObj);
+        if (!uploadResult?.url) {
+          setStyleStepStatus("error");
+          setStyleStepError("场景图上传失败");
+          setStyleStepMessage("场景图上传失败，请重试");
+          return null;
+        }
+
+        const url = uploadResult.url;
+        setOriginalSceneUrl(url);
+        setStyleStepStatus("done");
+        setStyleStepMessage("场景图上传完成");
+        return url;
+      };
+
+      const sceneImageUrl = await processScene();
+      if (!sceneImageUrl) return;
+
+      await startBatch({
+        tasks: buildMaterialTasks(sceneImageUrl),
+        modelId: selectedModel,
+        aspectRatio,
+        imageSize,
+        concurrency: 2,
+        onTaskComplete: (taskId, result) => {
+          setResults((prev) => [...prev, { id: taskId, imageUrl: result }]);
+        },
+      });
+    } else if (workflowMode === "apply") {
+      if (sceneFiles.length === 0 || productFiles.length === 0 || designFiles.length === 0) return;
       const sceneFile = sceneFiles[0];
       if (!sceneFile?.file) return;
 
@@ -417,6 +482,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     clearTasks,
     buildReplaceTasks,
     buildApplyTasks,
+    buildMaterialTasks,
     preview,
   ]);
 
@@ -459,18 +525,22 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     }
   }, [tasks, processedSceneUrl, originalSceneUrl, retryTask]);
 
-  const hasSceneFile = workflowMode === "apply"
+  const hasSceneFile = workflowMode === "apply" || workflowMode === "material"
     ? sceneFiles.length > 0 && sceneFiles[0]?.file != null
     : mode === "single"
       ? sceneFiles.length > 0 && sceneFiles[0]?.file != null
       : sceneItems.length > 0;
+
+  const hasProductFile = workflowMode === "apply" || workflowMode === "material"
+    ? productFiles.length > 0 && productFiles[0]?.file != null
+    : productFiles.length > 0;
 
   const hasDesignFile = designFiles.length > 0;
 
   const isGenerating = styleStepStatus === "processing" || isProcessing;
   const hasFailedTasks = tasks.some((t) => t.status === "failed");
 
-  const totalCount = workflowMode === "apply"
+  const totalCount = workflowMode === "apply" || workflowMode === "material"
     ? sceneFiles.length * designFiles.length
     : mode === "single"
       ? productFiles.length
@@ -503,6 +573,7 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     isProcessing,
     overallProgress,
     hasSceneFile,
+    hasProductFile,
     hasDesignFile,
     isGenerating,
     hasFailedTasks,
@@ -531,7 +602,25 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     clearTasks,
 
     toggleWorkflowMode: useCallback(() => {
-      const newMode: WorkflowMode = workflowMode === "apply" ? "replace" : "apply";
+      const modeOrder: WorkflowMode[] = ["replace", "apply", "material"];
+      const currentIndex = modeOrder.indexOf(workflowMode);
+      const nextIndex = (currentIndex + 1) % modeOrder.length;
+      const newMode = modeOrder[nextIndex];
+      setWorkflowMode(newMode);
+      setSceneFiles([]);
+      setProductFiles([]);
+      setDesignFiles([]);
+      setSceneItems([]);
+      setProcessedSceneUrl(null);
+      setOriginalSceneUrl(null);
+      setStyleStepStatus("idle");
+      setStyleStepError(null);
+      setResults([]);
+      clearTasks();
+    }, [workflowMode, clearTasks]),
+
+    switchWorkflowMode: useCallback((newMode: WorkflowMode) => {
+      if (newMode === workflowMode) return;
       setWorkflowMode(newMode);
       setSceneFiles([]);
       setProductFiles([]);
