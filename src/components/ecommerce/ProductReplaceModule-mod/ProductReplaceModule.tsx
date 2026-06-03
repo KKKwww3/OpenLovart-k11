@@ -31,8 +31,8 @@ export function ProductReplaceModule({
 
   const workflowTabs = [
     { key: "replace", label: "产品替换", desc: "原流程" },
-    { key: "apply", label: "设计应用", desc: "场景+产品白底+设计" },
-    { key: "material", label: "材质参考", desc: "场景+产品白底+设计+材质" },
+    { key: "apply", label: "设计应用", desc: "设计图→产品白底→场景替换" },
+    { key: "material", label: "材质参考", desc: "设计图→产品白底→场景替换" },
   ] as const;
 
   return (
@@ -95,9 +95,7 @@ export function ProductReplaceModule({
           onSceneChange={ctx.handleSceneChange}
           onProductChange={ctx.handleProductChange}
           onDesignChange={ctx.handleDesignChange}
-          onMaterialRefChange={ctx.handleMaterialRefChange}
           onPreviewImage={ctx.setPreviewImage}
-          mode={ctx.workflowMode === "material" ? "material" : "apply"}
         />
       ) : (
         <>
@@ -177,9 +175,7 @@ export function ProductReplaceModule({
             ? "生成中..."
             : ctx.workflowMode === "replace"
             ? `批量替换 (${ctx.totalCount}张)`
-            : ctx.workflowMode === "apply"
-            ? `批量应用 (${ctx.totalCount}张)`
-            : `批量生成 (${ctx.totalCount}张)`}
+            : `两阶段生成 (${ctx.totalCount}张)`}
         </span>
       </button>
 

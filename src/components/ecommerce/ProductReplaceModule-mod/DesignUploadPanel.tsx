@@ -1,7 +1,6 @@
 "use client";
 
-import React from "react";
-import { Image as ImageIcon, Sparkles, Palette } from "lucide-react";
+import { Image as ImageIcon, Sparkles } from "lucide-react";
 import { UploadZone, type UploadedFile } from "../UploadZone";
 
 interface DesignUploadPanelProps {
@@ -12,9 +11,7 @@ interface DesignUploadPanelProps {
   onSceneChange: (files: UploadedFile[]) => void;
   onProductChange: (files: UploadedFile[]) => void;
   onDesignChange: (files: UploadedFile[]) => void;
-  onMaterialRefChange?: (designId: string, file: File | null) => void;
   onPreviewImage: (url: string) => void;
-  mode?: "apply" | "material";
 }
 
 function StepBadge({ number }: { number: number }) {
@@ -33,12 +30,8 @@ export function DesignUploadPanel({
   onSceneChange,
   onProductChange,
   onDesignChange,
-  onMaterialRefChange,
   onPreviewImage,
-  mode = "apply",
 }: DesignUploadPanelProps) {
-  const isMaterialMode = mode === "material";
-
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
@@ -115,26 +108,6 @@ export function DesignUploadPanel({
             placeholder="上传设计图案（可批量，每个设计单独生成）"
           />
         </div>
-
-        {/* Step 4: Material Reference (only in material mode) */}
-        {isMaterialMode && designFiles.length > 0 && (
-          <div className="p-3 bg-amber-50/30">
-            <div className="flex items-center gap-2 mb-3">
-              <Palette size={14} className="text-amber-500" />
-              <p className="text-sm font-medium text-gray-700">材质参考图</p>
-              <span className="text-xs text-gray-400">（每张设计图对应一张材质）</span>
-            </div>
-            <div className="space-y-2">
-              {designFiles.map((df) => (
-                <DesignMaterialCard
-                  key={df.id}
-                  designFile={df}
-                  onMaterialRefChange={onMaterialRefChange}
-                />
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Status indicator */}
@@ -144,7 +117,7 @@ export function DesignUploadPanel({
           <p className="text-xs text-indigo-600">
             将生成{" "}
             <span className="font-semibold">{sceneFiles.length * designFiles.length}</span>{" "}
-            张结果（{sceneFiles.length} 场景 × {designFiles.length} 设计）
+            张结果（先将设计图贴到产品白底图，再替换场景中的产品）
           </p>
         </div>
       )}
@@ -153,50 +126,10 @@ export function DesignUploadPanel({
         <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-100">
           <ImageIcon size={14} className="text-gray-300 shrink-0" />
           <p className="text-xs text-gray-400">
-            依次上传场景图、产品白底图、设计图，系统将设计图案应用到产品上并放入场景中
+            依次上传场景图、产品白底图、设计图，系统会先将设计图贴到产品白底图生成成品，再替换场景中的产品
           </p>
         </div>
       )}
-
-      {isMaterialMode && sceneFiles.length > 0 && designFiles.length > 0 && (
-        <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 rounded-lg border border-amber-100">
-          <Palette size={14} className="text-amber-400 shrink-0" />
-          <p className="text-xs text-amber-600">
-            请为每张设计图上传对应的材质参考图，以确保材质效果准确还原
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function DesignMaterialCard({
-  designFile,
-  onMaterialRefChange,
-}: {
-  designFile: UploadedFile;
-  onMaterialRefChange?: (designId: string, file: File | null) => void;
-}) {
-  const [materialFile, setMaterialFile] = React.useState<File | null>(null);
-
-  const handleMaterialChange = (files: UploadedFile[]) => {
-    const file = files[0]?.file || null;
-    setMaterialFile(file);
-    onMaterialRefChange?.(designFile.id, file);
-  };
-
-  return (
-    <div className="rounded-lg border border-amber-200 bg-white p-2.5">
-      <p className="text-xs font-medium text-gray-600 mb-1.5 truncate">
-        {designFile.file?.name || "设计图"}
-      </p>
-      <UploadZone
-        multiple={false}
-        maxFiles={1}
-        value={materialFile ? [{ id: designFile.id, file: materialFile }] : []}
-        onChange={handleMaterialChange}
-        placeholder="上传该设计对应的材质参考图"
-      />
     </div>
   );
 }
