@@ -179,7 +179,8 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
 
   const hasDesignFile = designFiles.length > 0;
 
-  const isGenerating = styleStepStatus === "processing" || isProcessing;
+  const generatingRef = useRef(false);
+  const isGenerating = generatingRef.current || styleStepStatus === "processing" || isProcessing;
   const hasFailedTasks = tasks.some((t) => t.status === "failed");
 
   const totalCount = workflowMode === "apply" || workflowMode === "material"
@@ -238,7 +239,15 @@ export function useProductReplace({ supabase, onAddToCanvas }: UseProductReplace
     ...preview,
     ...canvasActions,
 
-    handleGenerate: generateHandler.handleGenerate,
+    handleGenerate: useCallback(async () => {
+      if (generatingRef.current) return;
+      generatingRef.current = true;
+      try {
+        await generateHandler.handleGenerate();
+      } finally {
+        generatingRef.current = false;
+      }
+    }, [generateHandler]),
     handleRetryStylePreprocess: generateHandler.handleRetryStylePreprocess,
     handleRetryProductReplace: generateHandler.handleRetryProductReplace,
     clearTasks,
